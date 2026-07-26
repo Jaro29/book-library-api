@@ -5,4 +5,6 @@ import pl.jaro.restapiworkshop.model.Book;
 
 public interface BookService {
     Book createBook(BookCreateRequest createRequest, boolean allowDuplicate);
+
+    Book findBookById(Long id);
 }

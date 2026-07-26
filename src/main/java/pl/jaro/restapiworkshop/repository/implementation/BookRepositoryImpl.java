@@ -10,6 +10,7 @@ import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import pl.jaro.restapiworkshop.exception.ApiException;
+import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
@@ -75,19 +76,11 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public boolean delete(Long id) {
+    public Book findById(Long id) {
         try {
-            int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
-
-            if (deletedRows == 0) {
-                throw new ApiException("Nie znaleziono książki id: " + id);
-            }
-
-            return true;
-
-        } catch (ApiException exception) {
-            throw exception;
-
+            return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id), new BookRowMapper());
+        } catch (EmptyResultDataAccessException exception) {
+            throw new BookNotFoundException("Nie znaleziono książki id: " + id);
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             throw new ApiException("Błąd. Spróbuj ponownie.");
@@ -95,11 +88,15 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public Book findById(Long id) {
+    public boolean delete(Long id) {
         try {
-            return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id), new BookRowMapper());
-        } catch (EmptyResultDataAccessException exception) {
-            throw new ApiException("Nie znaleziono książki id: " + id);
+            int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
+            if (deletedRows == 0) {
+                throw new BookNotFoundException("Nie znaleziono książki id: " + id);
+            }
+            return true;
+        } catch (BookNotFoundException exception) {
+            throw exception;
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             throw new ApiException("Błąd. Spróbuj ponownie.");
@@ -114,12 +111,12 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
             int updatedRows = jdbc.update(UPDATE_BOOK_QUERY, parameters);
 
             if (updatedRows == 0) {
-                throw new ApiException("Nie znaleziono książki o id: " + book.getId());
+                throw new BookNotFoundException("Nie znaleziono książki id: " + book.getId());
             }
 
             return book;
 
-        } catch (ApiException exception) {
+        } catch (BookNotFoundException exception) {
             throw exception;
 
         } catch (Exception exception) {
@@ -133,7 +130,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
         try {
             return jdbc.queryForObject(SELECT_BOOK_BY_ISBN_QUERY, of("isbn", isbn), new BookRowMapper());
         } catch (EmptyResultDataAccessException exception) {
-            throw new ApiException("Nie znaleziono książki o isbn: " + isbn);
+            throw new BookNotFoundException("Nie znaleziono książki o isbn: " + isbn);
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             throw new ApiException("Błąd. Spróbuj ponownie.");

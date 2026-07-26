@@ -4,10 +4,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookResponse;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
@@ -27,5 +24,12 @@ public class BookController {
         Book book = bookService.createBook(createRequest, allowDuplicate);
         BookResponse response = BookMapper.fromBook(book);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping("/books/{id}")
+    public ResponseEntity<BookResponse> findBookById(@PathVariable Long id){
+        Book book = bookService.findBookById(id);
+        BookResponse response = BookMapper.fromBook(book);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
