@@ -3,6 +3,7 @@ package pl.jaro.restapiworkshop.service.implementation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
+import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
 import pl.jaro.restapiworkshop.exception.ApiException;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
@@ -17,6 +18,7 @@ import java.util.Collection;
 @RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
+
     @Override
     public Book createBook(BookCreateRequest createRequest, boolean allowDuplicate) {
         boolean exists = bookRepository.existsByTitleAndAuthor(createRequest.title(), createRequest.author());
@@ -41,7 +43,13 @@ public class BookServiceImpl implements BookService {
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
-        return new PageResponse<>(new ArrayList<>(books),page,pageSize,totalElements,totalPages);
+        return new PageResponse<>(new ArrayList<>(books), page, pageSize, totalElements, totalPages);
+    }
+
+    @Override
+    public Book updateBook(Long id, BookPatchRequest patchRequest) {
+        Book book = BookMapper.toBook(patchRequest, bookRepository.findById(id));
+        return bookRepository.update(book);
     }
 
 }

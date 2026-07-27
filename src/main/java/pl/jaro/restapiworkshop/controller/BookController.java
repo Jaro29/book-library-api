@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
+import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.BookResponse;
 import pl.jaro.restapiworkshop.dto.PageResponse;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
@@ -50,5 +51,12 @@ public class BookController {
                 pageResponse.totalPages()
         );
         return ResponseEntity.ok(response);
+    }
+
+    @PatchMapping("/books/{id}")
+    public ResponseEntity<BookResponse> patchBook(@PathVariable Long id, @RequestBody @Valid BookPatchRequest bookPatchRequest) {
+        Book book = bookService.updateBook(id, bookPatchRequest);
+        BookResponse response = BookMapper.fromBook(book);
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 }
