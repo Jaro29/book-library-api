@@ -7,10 +7,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookResponse;
+import pl.jaro.restapiworkshop.dto.PageResponse;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.service.BookService;
 
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,9 +29,26 @@ public class BookController {
     }
 
     @GetMapping("/books/{id}")
-    public ResponseEntity<BookResponse> findBookById(@PathVariable Long id){
+    public ResponseEntity<BookResponse> findBookById(@PathVariable Long id) {
         Book book = bookService.findBookById(id);
         BookResponse response = BookMapper.fromBook(book);
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @GetMapping("/books")
+    public ResponseEntity<PageResponse<BookResponse>> findAllBooks(@RequestParam(defaultValue = "0") int page,
+                                                                   @RequestParam(defaultValue = "20") int pageSize) {
+        PageResponse<Book> pageResponse = bookService.findAllBooks(page, pageSize);
+        List<BookResponse> content = pageResponse.content().stream()
+                .map(BookMapper::fromBook)
+                .toList();
+        PageResponse<BookResponse> response = new PageResponse<>(
+                content,
+                pageResponse.page(),
+                pageResponse.pageSize(),
+                pageResponse.totalElements(),
+                pageResponse.totalPages()
+        );
+        return ResponseEntity.ok(response);
     }
 }
