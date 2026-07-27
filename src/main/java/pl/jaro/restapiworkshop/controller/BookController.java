@@ -60,6 +60,9 @@ public class BookController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
-//    @DeleteMapping("/books/{id}")
-//    public
+    @DeleteMapping("/books/{id}")
+    public ResponseEntity<Void> deleteBook(@PathVariable Long id){
+        bookService.deleteBook(id);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+    }
 }

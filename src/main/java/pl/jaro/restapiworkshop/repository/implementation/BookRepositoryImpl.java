@@ -100,21 +100,6 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public void delete(Long id) {
-        try {
-            int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
-            if (deletedRows == 0) {
-                throw new BookNotFoundException("Nie znaleziono książki id: " + id);
-            }
-        } catch (BookNotFoundException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
-    }
-
-    @Override
     public Book update(Book book) {
         try {
             SqlParameterSource parameters = getBookUpdateParameters(book);
@@ -130,6 +115,21 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
         } catch (BookNotFoundException exception) {
             throw exception;
 
+        } catch (Exception exception) {
+            log.error(exception.getMessage(), exception);
+            throw new ApiException("Błąd. Spróbuj ponownie.");
+        }
+    }
+
+    @Override
+    public void delete(Long id) {
+        try {
+            int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
+            if (deletedRows == 0) {
+                throw new BookNotFoundException("Nie znaleziono książki id: " + id);
+            }
+        } catch (BookNotFoundException exception) {
+            throw exception;
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             throw new ApiException("Błąd. Spróbuj ponownie.");
