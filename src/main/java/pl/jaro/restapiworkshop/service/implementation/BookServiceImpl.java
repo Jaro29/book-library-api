@@ -52,4 +52,9 @@ public class BookServiceImpl implements BookService {
         return bookRepository.update(book);
     }
 
+    @Override
+    public void deleteBook(Long id) {
+
+    }
+
 }

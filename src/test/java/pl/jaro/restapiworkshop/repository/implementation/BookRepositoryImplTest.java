@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
-import pl.jaro.restapiworkshop.exception.ApiException;
+import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.model.BookStatus;
 
@@ -34,7 +34,7 @@ class BookRepositoryImplTest {
         Book book = new Book();
         book.setTitle("Wiedźmin");
         book.setAuthor("Andrzej Sapkowski");
-        book.setIsbn("9788375780635");
+        book.setIsbn("9788328917545");
         book.setStatus(BookStatus.TO_READ);
 
         Book created = bookRepository.create(book);
@@ -44,23 +44,23 @@ class BookRepositoryImplTest {
 
     @Test
     void shouldFindBookById() {
-        Book saved = bookRepository.create(sampleBook("Wiedźmin"));
+        Book saved = bookRepository.create(sampleBook("Wiedźmin2"));
 
         Book found = bookRepository.findById(saved.getId());
 
-        assertThat(found.getTitle()).isEqualTo("Wiedźmin");
+        assertThat(found.getTitle()).isEqualTo("Wiedźmin2");
     }
 
     @Test
     void shouldThrowWhenBookNotFound() {
-        assertThrows(ApiException.class, () -> bookRepository.findById(999L));
+        assertThrows(BookNotFoundException.class, () -> bookRepository.findById(999L));
     }
 
     @Test
     void shouldFindBooksByTitleCaseInsensitive() {
-        bookRepository.create(sampleBook("Wiedźmin"));
+        bookRepository.create(sampleBook("Wiedźmin3"));
 
-        Collection<Book> results = bookRepository.getBooksByTitle("wiedźmin", 0, 10);
+        Collection<Book> results = bookRepository.getBooksByTitle("wiedźmin3", 0, 10);
 
         assertThat(results).hasSize(1);
     }
@@ -78,11 +78,8 @@ class BookRepositoryImplTest {
     @Test
     void shouldDeleteBook() {
         Book saved = bookRepository.create(sampleBook("Do usunięcia"));
-
-        boolean deleted = bookRepository.delete(saved.getId());
-
-        assertThat(deleted).isTrue();
-        assertThrows(ApiException.class, () -> bookRepository.findById(saved.getId()));
+        bookRepository.delete(saved.getId());
+        assertThrows(BookNotFoundException.class, () -> bookRepository.findById(saved.getId()));
     }
 
     private Book sampleBook(String title) {

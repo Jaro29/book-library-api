@@ -15,4 +15,6 @@ public interface BookService {
     PageResponse<Book> findAllBooks(int page, int pageSize);
 
     Book updateBook(Long id, BookPatchRequest bookPatchRequest);
+
+    void deleteBook(Long id);
 }

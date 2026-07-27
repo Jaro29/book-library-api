@@ -17,7 +17,7 @@ public interface BookRepository {
 
     Book update(Book book);
 
-    boolean delete(Long id);
+    void delete(Long id);
 
     int countAll();
 

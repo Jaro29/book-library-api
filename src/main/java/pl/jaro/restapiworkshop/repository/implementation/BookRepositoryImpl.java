@@ -100,13 +100,12 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public boolean delete(Long id) {
+    public void delete(Long id) {
         try {
             int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
             if (deletedRows == 0) {
                 throw new BookNotFoundException("Nie znaleziono książki id: " + id);
             }
-            return true;
         } catch (BookNotFoundException exception) {
             throw exception;
         } catch (Exception exception) {
