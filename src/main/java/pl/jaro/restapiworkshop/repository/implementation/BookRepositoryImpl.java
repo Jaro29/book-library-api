@@ -18,6 +18,7 @@ import pl.jaro.restapiworkshop.repository.BookSearchRepository;
 import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
 
 import java.util.Collection;
+import java.util.Map;
 
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
@@ -69,6 +70,17 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
 
             return jdbc.query(SELECT_ALL_BOOKS_QUERY, getPaginationParameters(page, pageSize), new BookRowMapper());
 
+        } catch (Exception exception) {
+            log.error(exception.getMessage(), exception);
+            throw new ApiException("Błąd. Spróbuj ponownie.");
+        }
+    }
+
+    @Override
+    public int countAll() {
+        try {
+            Integer count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, Map.of(), Integer.class);
+            return count != null ? count : 0;
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             throw new ApiException("Błąd. Spróbuj ponownie.");

@@ -81,6 +81,11 @@ public final class BookQuery {
         LIMIT :pageSize OFFSET :offset
         """;
 
+    public static final String COUNT_ALL_BOOKS_QUERY = """
+        SELECT COUNT(*)
+        FROM books
+        """;
+
     public static final String DELETE_BOOK_QUERY =
             "DELETE FROM books WHERE id = :id";
 }
