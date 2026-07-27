@@ -15,7 +15,7 @@ public interface BookRepository {
 
     Book findById(Long id);
 
-    Book update(Book data);
+    Book update(Book book);
 
     boolean delete(Long id);
 

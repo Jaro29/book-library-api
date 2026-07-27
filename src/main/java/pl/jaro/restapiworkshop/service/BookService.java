@@ -1,6 +1,7 @@
 package pl.jaro.restapiworkshop.service;
 
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
+import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
 import pl.jaro.restapiworkshop.model.Book;
 
@@ -12,4 +13,6 @@ public interface BookService {
     Book findBookById(Long id);
 
     PageResponse<Book> findAllBooks(int page, int pageSize);
+
+    Book updateBook(Long id, BookPatchRequest bookPatchRequest);
 }
