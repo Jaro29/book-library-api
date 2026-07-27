@@ -1,0 +1,16 @@
+INSERT INTO books (title, author, isbn, status, start_date, finish_date, notes) VALUES
+                                                                                    ('Wiedźmin', 'Andrzej Sapkowski', '9788375780635', 'FINISHED', '2020-01-05', '2020-02-10', 'Klasyka polskiego fantasy'),
+                                                                                    ('Solaris', 'Stanisław Lem', '9788308077535', 'FINISHED', '2019-06-01', '2019-06-20', NULL),
+                                                                                    ('Lalka', 'Bolesław Prus', '9788373275325', 'TO_READ', NULL, NULL, NULL),
+                                                                                    ('Zbrodnia i kara', 'Fiodor Dostojewski', '9788308067239', 'READING', '2026-07-01', NULL, 'Trzeci raz czytam'),
+                                                                                    ('1984', 'George Orwell', '9780451524935', 'FINISHED', '2018-03-15', '2018-04-01', NULL),
+                                                                                    ('Rok 1984', 'George Orwell', NULL, 'TO_READ', NULL, NULL, 'Wersja bez ISBN do testów'),
+                                                                                    ('Mistrz i Małgorzata', 'Michaił Bułhakow', '9788373196873', 'FINISHED', '2021-05-10', '2021-06-01', NULL),
+                                                                                    ('Duma i uprzedzenie', 'Jane Austen', '9780141439518', 'TO_READ', NULL, NULL, NULL),
+                                                                                    ('Folwark zwierzęcy', 'George Orwell', '9788328711277', 'FINISHED', '2017-09-01', '2017-09-10', NULL),
+                                                                                    ('Wojna i pokój', 'Lew Tołstoj', '9788308061268', 'READING', '2026-06-01', NULL, NULL),
+                                                                                    ('Hobbit', 'J.R.R. Tolkien', '9788328712410', 'FINISHED', '2015-01-01', '2015-01-20', 'Pierwsze czytanie w liceum'),
+                                                                                    ('Władca Pierścieni', 'J.R.R. Tolkien', '9788328712427', 'TO_READ', NULL, NULL, NULL),
+                                                                                    ('Proces', 'Franz Kafka', '9788308060926', 'FINISHED', '2022-02-01', '2022-02-15', NULL),
+                                                                                    ('Dżuma', 'Albert Camus', '9788308071502', 'TO_READ', NULL, NULL, NULL),
+                                                                                    ('Ferdydurke', 'Witold Gombrowicz', NULL, 'READING', '2026-07-10', NULL, 'Trudna lektura');
