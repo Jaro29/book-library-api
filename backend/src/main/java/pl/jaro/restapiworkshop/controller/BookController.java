@@ -1,9 +1,11 @@
 package pl.jaro.restapiworkshop.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookPatchRequest;
@@ -16,6 +18,7 @@ import pl.jaro.restapiworkshop.service.BookService;
 import java.util.List;
 
 @RestController
+@Validated
 @RequiredArgsConstructor
 public class BookController {
     private final BookService bookService;
@@ -37,8 +40,8 @@ public class BookController {
     }
 
     @GetMapping("/books")
-    public ResponseEntity<PageResponse<BookResponse>> findAllBooks(@RequestParam(defaultValue = "0") int page,
-                                                                   @RequestParam(defaultValue = "20") int pageSize) {
+    public ResponseEntity<PageResponse<BookResponse>> findAllBooks(@RequestParam(defaultValue = "0") @Min(0) int page,
+                                                                   @RequestParam(defaultValue = "20") @Min(1) int pageSize) {
         PageResponse<Book> pageResponse = bookService.findAllBooks(page, pageSize);
         List<BookResponse> content = pageResponse.content().stream()
                 .map(BookMapper::fromBook)
