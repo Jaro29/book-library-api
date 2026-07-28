@@ -54,7 +54,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
 
         try {
             KeyHolder holder = new GeneratedKeyHolder();
-            SqlParameterSource parameters = getBookParameter(book);
+            SqlParameterSource parameters = getBookParameters(book);
             jdbc.update(INSERT_BOOK_QUERY, parameters, holder, new String[]{"id"});
             book.setId(requireNonNull(holder.getKey()).longValue());
         } catch (Exception exception) {
@@ -102,7 +102,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     @Override
     public Book update(Book book) {
         try {
-            SqlParameterSource parameters = getBookUpdateParameters(book);
+            SqlParameterSource parameters = getBookParameters(book);
 
             int updatedRows = jdbc.update(UPDATE_BOOK_QUERY, parameters);
 
@@ -187,8 +187,8 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
         }
     }
 
-    private SqlParameterSource getBookParameter(Book book) {
-        return new MapSqlParameterSource()
+    private SqlParameterSource getBookParameters(Book book) {
+        MapSqlParameterSource parameters = new MapSqlParameterSource()
                 .addValue("title", book.getTitle())
                 .addValue("author", book.getAuthor())
                 .addValue("isbn", book.getIsbn())
@@ -196,18 +196,12 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
                 .addValue("startDate", book.getStartDate())
                 .addValue("finishDate", book.getFinishDate())
                 .addValue("notes", book.getNotes());
-    }
 
-    private SqlParameterSource getBookUpdateParameters(Book book) {
-        return new MapSqlParameterSource()
-                .addValue("id", book.getId())
-                .addValue("title", book.getTitle())
-                .addValue("author", book.getAuthor())
-                .addValue("isbn", book.getIsbn())
-                .addValue("status", book.getStatus().name())
-                .addValue("startDate", book.getStartDate())
-                .addValue("finishDate", book.getFinishDate())
-                .addValue("notes", book.getNotes());
+        if (book.getId() != null) {
+            parameters.addValue("id", book.getId());
+        }
+
+        return parameters;
     }
 
     private MapSqlParameterSource getPaginationParameters(int page, int pageSize) {
