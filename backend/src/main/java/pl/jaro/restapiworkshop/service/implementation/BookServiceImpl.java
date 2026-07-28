@@ -6,6 +6,7 @@ import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
 import pl.jaro.restapiworkshop.exception.ApiException;
+import pl.jaro.restapiworkshop.exception.DuplicateBookException;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.repository.BookRepository;
@@ -23,7 +24,7 @@ public class BookServiceImpl implements BookService {
     public Book createBook(BookCreateRequest createRequest, boolean allowDuplicate) {
         boolean exists = bookRepository.existsByTitleAndAuthor(createRequest.title(), createRequest.author());
         if (!allowDuplicate && exists) {
-            throw new ApiException("Książka o tym tytule i autorze już istnieje.");
+            throw new DuplicateBookException("Książka o tym tytule i autorze już istnieje.");
         }
 
         Book book = BookMapper.toBook(createRequest);
