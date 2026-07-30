@@ -1,0 +1,7 @@
+<h2>Lista książek</h2>
+
+<ul>
+  @for (book of books(); track book.id) {
+    <li>{{ book.title }} — {{ book.author }} ({{ book.status }})</li>
+  }
+</ul>
