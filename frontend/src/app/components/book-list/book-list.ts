@@ -1,6 +1,5 @@
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { BookService } from '../../services/book';
-import { Book } from '../../models/book';
 
 @Component({
   selector: 'app-book-list',
@@ -11,8 +10,18 @@ import { Book } from '../../models/book';
 export class BookList implements OnInit {
   protected bookService = inject(BookService);
   protected books = this.bookService.books;
+  protected currentPage = this.bookService.currentPage;
+  protected totalPages = this.bookService.totalPages;
 
   ngOnInit() {
     this.bookService.loadBooks();
+  }
+
+  nextPage() {
+    this.bookService.loadBooks(this.currentPage() + 1);
+  }
+
+  previousPage() {
+    this.bookService.loadBooks(this.currentPage() - 1);
   }
 }

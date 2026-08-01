@@ -16,6 +16,11 @@
   @if (bookForm.author().touched() && bookForm.author().invalid()) {
     <span class="error">{{ bookForm.author().errors()[0].message }}</span>
   }
-
+  @if (duplicateError()) {
+    <p class="error">
+      Taka książka już istnieje.
+      <button type="button" (click)="confirmDuplicate()">Dodaj mimo to</button>
+    </p>
+  }
   <button type="submit" [disabled]="bookForm().invalid()">Dodaj książkę</button>
 </form>

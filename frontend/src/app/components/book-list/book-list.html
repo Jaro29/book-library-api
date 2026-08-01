@@ -5,3 +5,7 @@
     <li>{{ book.title }} — {{ book.author }} ({{ book.status }})</li>
   }
 </ul>
+
+<button (click)="previousPage()" [disabled]="currentPage() === 0">Poprzednia</button>
+<span>Strona {{ currentPage() + 1 }} z {{ totalPages() }}</span>
+<button (click)="nextPage()" [disabled]="currentPage() + 1 >= totalPages()">Następna</button>
