@@ -37,4 +37,8 @@ export class BookService {
       book
     );
   }
+
+  deleteBook(id: number) {
+  return this.http.delete<void>(`http://localhost:8080/books/${id}`);
+}
 }
