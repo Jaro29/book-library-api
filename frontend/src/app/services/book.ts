@@ -21,9 +21,7 @@ export class BookService {
 
   loadBooks(page: number = 0) {
     this.http
-      .get<PageResponse<Book>>(
-        `http://localhost:8080/books?page=${page}&pageSize=${this.pageSize}`
-      )
+      .get<PageResponse<Book>>(`http://localhost:8080/books?page=${page}&pageSize=${this.pageSize}`)
       .subscribe((response) => {
         this.books.set(response.content);
         this.currentPage.set(response.page);
@@ -34,11 +32,15 @@ export class BookService {
   createBook(book: { title: string; author: string }, allowDuplicate = false) {
     return this.http.post<Book>(
       `http://localhost:8080/books?allowDuplicate=${allowDuplicate}`,
-      book
+      book,
     );
   }
 
   deleteBook(id: number) {
-  return this.http.delete<void>(`http://localhost:8080/books/${id}`);
+    return this.http.delete<void>(`http://localhost:8080/books/${id}`);
+  }
+
+  updateBook(id: number, changes: Partial<Book>) {
+  return this.http.patch<Book>(`http://localhost:8080/books/${id}`, changes);
 }
 }

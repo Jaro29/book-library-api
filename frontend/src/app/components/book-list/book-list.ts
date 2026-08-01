@@ -1,9 +1,10 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { BookService } from '../../services/book';
+import { EditBookForm } from '../edit-book-form/edit-book-form';
 
 @Component({
   selector: 'app-book-list',
-  imports: [],
+  imports: [EditBookForm],
   templateUrl: './book-list.html',
   styleUrl: './book-list.css',
 })
@@ -26,8 +27,25 @@ export class BookList implements OnInit {
   }
 
   onDelete(id: number) {
-  this.bookService.deleteBook(id).subscribe(() => {
-    this.bookService.loadBooks(this.currentPage());
-  });
-}
+    this.bookService.deleteBook(id).subscribe(() => {
+      this.bookService.loadBooks(this.currentPage());
+    });
+  }
+
+  editingBookId = signal<number | null>(null);
+
+  startEdit(id: number) {
+    this.editingBookId.set(id);
+  }
+
+  cancelEdit() {
+    this.editingBookId.set(null);
+  }
+
+  saveEdit(id: number, title: string, author: string) {
+    this.bookService.updateBook(id, { title, author }).subscribe(() => {
+      this.bookService.loadBooks(this.currentPage());
+      this.editingBookId.set(null);
+    });
+  }
 }
