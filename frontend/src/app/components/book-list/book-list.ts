@@ -24,4 +24,10 @@ export class BookList implements OnInit {
   previousPage() {
     this.bookService.loadBooks(this.currentPage() - 1);
   }
+
+  onDelete(id: number) {
+  this.bookService.deleteBook(id).subscribe(() => {
+    this.bookService.loadBooks(this.currentPage());
+  });
+}
 }

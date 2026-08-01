@@ -2,7 +2,10 @@
 
 <ul>
   @for (book of books(); track book.id) {
-    <li>{{ book.title }} — {{ book.author }} ({{ book.status }})</li>
+    <li>
+      {{ book.title }} — {{ book.author }} ({{ book.status }})
+      <button (click)="onDelete(book.id)">Usuń</button>
+    </li>
   }
 </ul>
 
