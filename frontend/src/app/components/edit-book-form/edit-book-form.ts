@@ -21,6 +21,11 @@ export class EditBookForm implements OnInit {
   protected model = signal({
     title: '',
     author: '',
+    isbn: '',
+    status: '',
+    startDate: '',
+    finishDate: '',
+    notes: '',
   });
 
   ngOnInit(): void {
@@ -28,6 +33,11 @@ export class EditBookForm implements OnInit {
     this.model.set({
       title: book.title,
       author: book.author,
+      isbn: book.isbn ?? '',
+      status: book.status,
+      startDate: book.startDate ?? '',
+      finishDate: book.finishDate ?? '',
+      notes: book.notes ?? '',
     });
   }
 
