@@ -8,17 +8,11 @@ import { Book } from '../../models/book';
   templateUrl: './book-list.html',
   styleUrl: './book-list.css',
 })
-export class BookList implements OnInit{
-  private bookService = inject(BookService);
-  books= signal<Book[]>([]);
+export class BookList implements OnInit {
+  protected bookService = inject(BookService);
+  protected books = this.bookService.books;
 
-    ngOnInit() {
-    this.loadBooks();
-  }
-
-  loadBooks() {
-    this.bookService.getBooks().subscribe((response) => {
-      this.books.set(response.content);
-    });
+  ngOnInit() {
+    this.bookService.loadBooks();
   }
 }
