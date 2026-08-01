@@ -21,17 +21,34 @@ export class AddBookForm {
     required(path.author, { message: 'Autor jest wymagany' });
   });
 
+  protected duplicateError = signal(false);
+
   protected onSubmit(event: Event) {
-  event.preventDefault();
-  if (this.bookForm().invalid()) {
-    return;
+    event.preventDefault();
+    if (this.bookForm().invalid()) {
+      return;
+    }
+    this.submitBook(false);
   }
-  this.bookService.createBook(this.model()).subscribe({
-    next: () => {
-      this.bookService.loadBooks();
-      this.model.set({ title: '', author: '' });
-    },
-    error: (err) => console.error('Błąd:', err),
-  });
-}
+
+  protected confirmDuplicate() {
+    this.submitBook(true);
+  }
+
+  private submitBook(allowDuplicate: boolean) {
+    this.bookService.createBook(this.model(), allowDuplicate).subscribe({
+      next: () => {
+        this.bookService.loadBooks(this.bookService.currentPage());
+        this.model.set({ title: '', author: '' });
+        this.duplicateError.set(false);
+      },
+      error: (err) => {
+        if (err.status === 409) {
+          this.duplicateError.set(true);
+        } else {
+          console.error('Błąd:', err);
+        }
+      },
+    });
+  }
 }
