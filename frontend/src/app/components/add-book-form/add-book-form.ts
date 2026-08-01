@@ -14,6 +14,11 @@ export class AddBookForm {
   protected model = signal({
     title: '',
     author: '',
+    isbn: '',
+    status: 'TO_READ',
+    startDate: '',
+    finishDate: '',
+    notes: '',
   });
 
   protected bookForm = form(this.model, (path) => {
@@ -35,11 +40,23 @@ export class AddBookForm {
     this.submitBook(true);
   }
 
+  protected cancelDuplicate() {
+    this.duplicateError.set(false);
+  }
+
   private submitBook(allowDuplicate: boolean) {
     this.bookService.createBook(this.model(), allowDuplicate).subscribe({
       next: () => {
         this.bookService.loadBooks(this.bookService.currentPage());
-        this.model.set({ title: '', author: '' });
+        this.model.set({
+          title: '',
+          author: '',
+          isbn: '',
+          status: 'TO_READ',
+          startDate: '',
+          finishDate: '',
+          notes: '',
+        });
         this.duplicateError.set(false);
       },
       error: (err) => {

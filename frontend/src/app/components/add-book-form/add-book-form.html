@@ -13,6 +13,35 @@
     <input type="text" [formField]="bookForm.author" />
   </label>
 
+  <label>
+  ISBN
+  <input type="text" [formField]="bookForm.isbn" />
+</label>
+
+<label>
+  Status
+  <select [formField]="bookForm.status">
+    <option value="TO_READ">Do przeczytania</option>
+    <option value="READING">W trakcie</option>
+    <option value="FINISHED">Przeczytana</option>
+  </select>
+</label>
+
+<label>
+  Data rozpoczęcia
+  <input type="date" [formField]="bookForm.startDate" />
+</label>
+
+<label>
+  Data zakończenia
+  <input type="date" [formField]="bookForm.finishDate" />
+</label>
+
+<label>
+  Notatki
+  <textarea [formField]="bookForm.notes"></textarea>
+</label>
+
   @if (bookForm.author().touched() && bookForm.author().invalid()) {
     <span class="error">{{ bookForm.author().errors()[0].message }}</span>
   }
@@ -20,6 +49,7 @@
     <p class="error">
       Taka książka już istnieje.
       <button type="button" (click)="confirmDuplicate()">Dodaj mimo to</button>
+      <button type="button" (click)="cancelDuplicate()">Anuluj</button>
     </p>
   }
   <button type="submit" [disabled]="bookForm().invalid()">Dodaj książkę</button>
