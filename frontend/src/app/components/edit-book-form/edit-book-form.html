@@ -1,0 +1,14 @@
+<form (submit)="onSubmit($event)">
+  <input type="text" [formField]="bookForm.title" />
+  @if (bookForm.title().touched() && bookForm.title().invalid()) {
+    <span class="error">{{ bookForm.title().errors()[0].message }}</span>
+  }
+
+  <input type="text" [formField]="bookForm.author" />
+  @if (bookForm.author().touched() && bookForm.author().invalid()) {
+    <span class="error">{{ bookForm.author().errors()[0].message }}</span>
+  }
+
+  <button type="submit" [disabled]="bookForm().invalid()">Zapisz</button>
+  <button type="button" (click)="cancelled.emit()">Anuluj</button>
+</form>

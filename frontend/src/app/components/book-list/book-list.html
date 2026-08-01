@@ -2,10 +2,15 @@
 
 <ul>
   @for (book of books(); track book.id) {
-    <li>
-      {{ book.title }} — {{ book.author }} ({{ book.status }})
-      <button (click)="onDelete(book.id)">Usuń</button>
-    </li>
+<li>
+@if (editingBookId() === book.id) {
+  <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
+} @else {
+  {{ book.title }} — {{ book.author }} ({{ book.status }})
+  <button (click)="startEdit(book.id)">Edytuj</button>
+  <button (click)="onDelete(book.id)">Usuń</button>
+}
+</li>
   }
 </ul>
 
