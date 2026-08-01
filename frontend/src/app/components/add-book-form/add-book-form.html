@@ -1,1 +1,21 @@
-<p>add-book-form works!</p>
+<form (submit)="onSubmit($event)">
+  <label>
+    Tytuł
+    <input type="text" [formField]="bookForm.title" />
+  </label>
+
+  @if (bookForm.title().touched() && bookForm.title().invalid()) {
+    <span class="error">{{ bookForm.title().errors()[0].message }}</span>
+  }
+
+  <label>
+    Autor
+    <input type="text" [formField]="bookForm.author" />
+  </label>
+
+  @if (bookForm.author().touched() && bookForm.author().invalid()) {
+    <span class="error">{{ bookForm.author().errors()[0].message }}</span>
+  }
+
+  <button type="submit" [disabled]="bookForm().invalid()">Dodaj książkę</button>
+</form>
