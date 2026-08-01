@@ -9,6 +9,8 @@ public interface BookRepository {
 
     boolean existsByTitleAndAuthor(String title, String author);
 
+    boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id);
+
     Book create(Book book);
 
     Collection<Book> findAll(int page, int pageSize);
