@@ -1,0 +1,32 @@
+form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  font-size: 14px;
+  gap: 4px;
+}
+
+input,
+select,
+textarea {
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+textarea {
+  min-width: 200px;
+  min-height: 60px;
+}
+
+button {
+  align-self: flex-end;
+  padding: 8px 16px;
+}
