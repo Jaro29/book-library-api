@@ -49,8 +49,14 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public Book updateBook(Long id, BookPatchRequest patchRequest) {
-        Book book = BookMapper.toBook(patchRequest, bookRepository.findById(id));
-        return bookRepository.update(book);
+        Book existingBook = bookRepository.findById(id);
+        Book updatedBook = BookMapper.toBook(patchRequest, existingBook);
+
+        if (bookRepository.existsByTitleAndAuthorExcludingId(updatedBook.getTitle(), updatedBook.getAuthor(), id)) {
+            throw new DuplicateBookException("Inna książka o tym tytule i autorze już istnieje.");
+        }
+
+        return bookRepository.update(updatedBook);
     }
 
     @Override

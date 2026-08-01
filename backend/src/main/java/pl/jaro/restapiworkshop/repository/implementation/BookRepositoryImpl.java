@@ -50,6 +50,25 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
+    public boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id) {
+        try {
+            Integer count = jdbc.queryForObject(
+                    COUNT_BOOK_TITLE_AUTHOR_EXCLUDING_ID_QUERY,
+                    of(
+                            "title", title.trim().toLowerCase(),
+                            "author", author.trim().toLowerCase(),
+                            "id", id
+                    ),
+                    Integer.class
+            );
+            return count != null && count > 0;
+        } catch (Exception exception) {
+            log.error(exception.getMessage(), exception);
+            throw new ApiException("Błąd. Spróbuj ponownie.");
+        }
+    }
+
+    @Override
     public Book create(Book book) {
 
         try {
