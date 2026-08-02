@@ -18,6 +18,7 @@ public class BookRowMapper implements RowMapper<Book> {
                 .status(BookStatus.valueOf(resultSet.getString("status")))
                 .startDate(resultSet.getObject("start_date", java.time.LocalDate.class))
                 .finishDate(resultSet.getObject("finish_date", java.time.LocalDate.class))
+                .timesRead(resultSet.getInt("times_read"))
                 .notes(resultSet.getString("notes"))
                 .build();
     }

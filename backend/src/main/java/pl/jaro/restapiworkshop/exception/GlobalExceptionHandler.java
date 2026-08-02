@@ -28,4 +28,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<String> handleConstraintViolation(ConstraintViolationException exception) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
     }
+
+    @ExceptionHandler(InvalidTimesReadException.class)
+    public ResponseEntity<String> handleInvalidBookStateException(InvalidTimesReadException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception.getMessage());
+    }
+
 }

@@ -7,8 +7,10 @@ import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
 import pl.jaro.restapiworkshop.exception.ApiException;
 import pl.jaro.restapiworkshop.exception.DuplicateBookException;
+import pl.jaro.restapiworkshop.exception.InvalidTimesReadException;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
 import pl.jaro.restapiworkshop.service.BookService;
 
@@ -28,7 +30,7 @@ public class BookServiceImpl implements BookService {
         }
 
         Book book = BookMapper.toBook(createRequest);
-
+        validateTimesRead(book);
         return bookRepository.create(book);
     }
 
@@ -51,7 +53,7 @@ public class BookServiceImpl implements BookService {
     public Book updateBook(Long id, BookPatchRequest patchRequest) {
         Book existingBook = bookRepository.findById(id);
         Book updatedBook = BookMapper.toBook(patchRequest, existingBook);
-
+        validateTimesRead(updatedBook);
         if (bookRepository.existsByTitleAndAuthorExcludingId(updatedBook.getTitle(), updatedBook.getAuthor(), id)) {
             throw new DuplicateBookException("Inna książka o tym tytule i autorze już istnieje.");
         }
@@ -62,6 +64,15 @@ public class BookServiceImpl implements BookService {
     @Override
     public void deleteBook(Long id) {
         bookRepository.delete(id);
+    }
+
+    private void validateTimesRead(Book book) {
+        if (book.getTimesRead() < 0) {
+            throw new InvalidTimesReadException("Liczba przeczytań nie może być ujemna.");
+        }
+        if ((book.getStatus() == BookStatus.FINISHED) && book.getTimesRead() <= 0) {
+            throw new InvalidTimesReadException("Wpisz przynajmniej 1 jeśli książka przeczytana.");
+        }
     }
 
 }

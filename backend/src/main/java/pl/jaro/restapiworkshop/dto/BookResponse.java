@@ -16,6 +16,7 @@ public record BookResponse(
         LocalDate startDate,
         LocalDate finishDate,
 
+        int timesRead,
         String notes
 
 ) {

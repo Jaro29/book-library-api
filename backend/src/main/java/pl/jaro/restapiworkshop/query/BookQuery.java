@@ -13,6 +13,7 @@ public final class BookQuery {
                 status,
                 start_date,
                 finish_date,
+                times_read,
                 notes
             )
             VALUES (
@@ -22,6 +23,7 @@ public final class BookQuery {
                 :status,
                 :startDate,
                 :finishDate,
+                :timesRead,
                 :notes
             )
             """;
@@ -77,6 +79,7 @@ public final class BookQuery {
                 status = :status,
                 start_date = :startDate,
                 finish_date = :finishDate,
+                times_read = :timesRead,
                 notes = :notes
             WHERE id = :id
             """;

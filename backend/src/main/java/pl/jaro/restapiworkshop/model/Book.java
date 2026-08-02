@@ -24,6 +24,7 @@ public class Book {
     private LocalDate startDate;
     private LocalDate finishDate;
 
+    private int timesRead;
     private String notes;
 
 }

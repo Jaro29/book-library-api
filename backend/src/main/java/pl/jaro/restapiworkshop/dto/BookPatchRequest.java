@@ -16,6 +16,7 @@ public record BookPatchRequest(
         LocalDate startDate,
         LocalDate finishDate,
 
+        Integer timesRead,
         String notes
 ) {
 }

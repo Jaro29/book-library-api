@@ -214,6 +214,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
                 .addValue("status", book.getStatus().name())
                 .addValue("startDate", book.getStartDate())
                 .addValue("finishDate", book.getFinishDate())
+                .addValue("timesRead", book.getTimesRead())
                 .addValue("notes", book.getNotes());
 
         if (book.getId() != null) {
