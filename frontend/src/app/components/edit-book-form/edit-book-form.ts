@@ -1,5 +1,5 @@
 import { Component, input, output, signal, OnInit } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
+import { form, FormField, min, required } from '@angular/forms/signals';
 import { inject } from '@angular/core';
 import { BookService } from '../../services/book';
 import { Book } from '../../models/book';
@@ -25,6 +25,7 @@ export class EditBookForm implements OnInit {
     status: '',
     startDate: '',
     finishDate: '',
+    timesRead: 0,
     notes: '',
   });
 
@@ -37,6 +38,7 @@ export class EditBookForm implements OnInit {
       status: book.status,
       startDate: book.startDate ?? '',
       finishDate: book.finishDate ?? '',
+      timesRead: book.timesRead,
       notes: book.notes ?? '',
     });
   }
@@ -44,7 +46,8 @@ export class EditBookForm implements OnInit {
   protected bookForm = form(this.model, (path) => {
     required(path.title, { message: 'Tytuł jest wymagany' });
     required(path.author, { message: 'Autor jest wymagany' });
-  });
+    min(path.timesRead, 0, { message: 'Liczba przeczytań nie może być ujemna' });
+    });
 
   protected onSubmit(event: Event) {
     event.preventDefault();

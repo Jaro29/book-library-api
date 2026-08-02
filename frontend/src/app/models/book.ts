@@ -6,5 +6,6 @@ export interface Book {
   status: string;
   startDate: string | null;
   finishDate: string | null;
+  timesRead: number;
   notes: string | null;
 }
