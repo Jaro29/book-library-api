@@ -1,49 +1,51 @@
-<form (submit)="onSubmit($event)">
-  <label>
-    Tytuł
+<form class="edit-form" (submit)="onSubmit($event)">
+  <div class="field">
+    <label>Tytuł</label>
     <input type="text" [formField]="bookForm.title" />
     @if (bookForm.title().touched() && bookForm.title().invalid()) {
-      <span class="error">{{ bookForm.title().errors()[0].message }}</span>
+      <span class="field-error">{{ bookForm.title().errors()[0].message }}</span>
     }
-  </label>
+  </div>
 
-  <label>
-    Autor
+  <div class="field">
+    <label>Autor</label>
     <input type="text" [formField]="bookForm.author" />
     @if (bookForm.author().touched() && bookForm.author().invalid()) {
-      <span class="error">{{ bookForm.author().errors()[0].message }}</span>
+      <span class="field-error">{{ bookForm.author().errors()[0].message }}</span>
     }
-  </label>
+  </div>
 
-  <label>
-    ISBN
+  <div class="field">
+    <label>ISBN</label>
     <input type="text" [formField]="bookForm.isbn" />
-  </label>
+  </div>
 
-  <label>
-    Status
+  <div class="field">
+    <label>Status</label>
     <select [formField]="bookForm.status">
       <option value="TO_READ">Do przeczytania</option>
       <option value="READING">W trakcie</option>
       <option value="FINISHED">Przeczytana</option>
     </select>
-  </label>
+  </div>
 
-  <label>
-    Data rozpoczęcia
+  <div class="field">
+    <label>Rozpoczęto</label>
     <input type="date" [formField]="bookForm.startDate" />
-  </label>
+  </div>
 
-  <label>
-    Data zakończenia
+  <div class="field">
+    <label>Zakończono</label>
     <input type="date" [formField]="bookForm.finishDate" />
-  </label>
+  </div>
 
-  <label>
-    Notatki
+  <div class="field field-wide">
+    <label>Notatki</label>
     <textarea [formField]="bookForm.notes"></textarea>
-  </label>
+  </div>
 
-  <button type="submit" [disabled]="bookForm().invalid()">Zapisz</button>
-  <button type="button" (click)="cancelled.emit()">Anuluj</button>
+  <div class="field-wide edit-actions">
+    <button type="submit" class="btn btn-primary" [disabled]="bookForm().invalid()">Zapisz</button>
+    <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">Anuluj</button>
+  </div>
 </form>

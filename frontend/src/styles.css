@@ -1,1 +1,96 @@
-/* You can add global styles to this file, and also import other style files */
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Lora:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+:root {
+  --color-ink: #17110d;
+  --color-cover: #241811;
+  --color-cover-alt: #2e1f16;
+  --color-spine: #4a3527;
+  --color-parchment: #ede0cf;
+  --color-parchment-muted: #b8a38e;
+  --color-marigold: #c98a2c;
+  --color-ember: #a63d2e;
+  --color-sage: #6b8358;
+  --color-focus: #e4b563;
+
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Lora', serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--color-ink);
+  color: var(--color-parchment);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+h1, h2, h3 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  margin: 0;
+  color: var(--color-parchment);
+}
+
+::selection { background: var(--color-marigold); color: var(--color-ink); }
+
+input, select, textarea {
+  font-family: var(--font-body);
+  font-size: 0.95rem;
+  color: var(--color-parchment);
+  background: var(--color-cover);
+  border: 1px solid var(--color-spine);
+  border-radius: 3px;
+  padding: 8px 10px;
+}
+
+input::placeholder, textarea::placeholder { color: var(--color-parchment-muted); }
+input[type='date'] { color-scheme: dark; }
+
+select {
+  appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-parchment-muted) 50%),
+    linear-gradient(135deg, var(--color-parchment-muted) 50%, transparent 50%);
+  background-position: calc(100% - 18px) 15px, calc(100% - 12px) 15px;
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 32px;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.btn {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 8px 14px;
+  border-radius: 3px;
+  border: 1px solid var(--color-spine);
+  background: var(--color-cover-alt);
+  color: var(--color-parchment);
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn:hover:not(:disabled) { background: var(--color-spine); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-primary { background: var(--color-marigold); border-color: var(--color-marigold); color: var(--color-ink); }
+.btn-primary:hover:not(:disabled) { background: #b87a22; }
+
+.btn-danger { background: transparent; border-color: var(--color-ember); color: var(--color-ember); }
+.btn-danger:hover:not(:disabled) { background: var(--color-ember); color: var(--color-parchment); }
+
+.btn-ghost { background: transparent; border-color: transparent; color: var(--color-parchment-muted); }
+.btn-ghost:hover { color: var(--color-parchment); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
