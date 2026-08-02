@@ -19,6 +19,7 @@ public final class BookMapper {
                 .status(createRequest.status() != null ? createRequest.status() : BookStatus.TO_READ)
                 .startDate(createRequest.startDate())
                 .finishDate(createRequest.finishDate())
+                .timesRead(createRequest.timesRead() != null ? createRequest.timesRead() : 0)
                 .notes(createRequest.notes())
                 .build();
     }
@@ -32,6 +33,7 @@ public final class BookMapper {
                 .status(patchRequest.status() != null ? patchRequest.status() : book.getStatus())
                 .startDate(patchRequest.startDate() != null ? patchRequest.startDate() : book.getStartDate())
                 .finishDate(patchRequest.finishDate() != null ? patchRequest.finishDate() : book.getFinishDate())
+                .timesRead(patchRequest.timesRead() != null ? patchRequest.timesRead() : book.getTimesRead())
                 .notes(patchRequest.notes() != null ? patchRequest.notes() : book.getNotes())
                 .build();
     }
@@ -45,6 +47,7 @@ public final class BookMapper {
                 book.getStatus(),
                 book.getStartDate(),
                 book.getFinishDate(),
+                book.getTimesRead(),
                 book.getNotes()
         );
     }
