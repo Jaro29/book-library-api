@@ -39,6 +39,14 @@
     <input id="add-finish" type="date" [formField]="bookForm.finishDate" />
   </div>
 
+  <div class="field">
+    <label for="add-times-read">Liczba przeczytań</label>
+    <input id="add-times-read" type="number" [formField]="bookForm.timesRead" />
+    @if (bookForm.timesRead().touched() && bookForm.timesRead().invalid()) {
+      <span class="field-error">{{ bookForm.timesRead().errors()[0].message }}</span>
+    }
+  </div>
+
   <div class="field field-wide">
     <label for="add-notes">Notatki</label>
     <textarea id="add-notes" [formField]="bookForm.notes"></textarea>
@@ -48,13 +56,17 @@
     <div class="field field-wide duplicate-banner">
       <span>Taka książka już istnieje.</span>
       <div class="duplicate-actions">
-        <button type="button" class="btn btn-primary" (click)="confirmDuplicate()">Dodaj mimo to</button>
+        <button type="button" class="btn btn-primary" (click)="confirmDuplicate()">
+          Dodaj mimo to
+        </button>
         <button type="button" class="btn btn-ghost" (click)="cancelDuplicate()">Anuluj</button>
       </div>
     </div>
   }
 
   <div class="field field-wide form-submit">
-    <button type="submit" class="btn btn-primary" [disabled]="bookForm().invalid()">Dodaj książkę</button>
+    <button type="submit" class="btn btn-primary" [disabled]="bookForm().invalid()">
+      Dodaj książkę
+    </button>
   </div>
 </form>

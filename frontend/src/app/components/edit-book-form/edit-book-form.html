@@ -39,6 +39,14 @@
     <input type="date" [formField]="bookForm.finishDate" />
   </div>
 
+  <div class="field">
+  <label>Liczba przeczytań</label>
+  <input type="number" [formField]="bookForm.timesRead" />
+  @if (bookForm.timesRead().touched() && bookForm.timesRead().invalid()) {
+    <span class="field-error">{{ bookForm.timesRead().errors()[0].message }}</span>
+  }
+</div>
+
   <div class="field field-wide">
     <label>Notatki</label>
     <textarea [formField]="bookForm.notes"></textarea>

@@ -14,11 +14,20 @@
             <span class="book-author">{{ book.author }}</span>
             <span class="book-status">
               @switch (book.status) {
-                @case ('FINISHED') { Przeczytana }
-                @case ('READING') { W trakcie }
-                @default { Do przeczytania }
+                @case ('FINISHED') {
+                  Przeczytana
+                }
+                @case ('READING') {
+                  W trakcie
+                }
+                @default {
+                  Do przeczytania
+                }
               }
             </span>
+            @if (book.timesRead > 0) {
+              <span class="book-times-read">×{{ book.timesRead }}</span>
+            }
           </div>
           <div class="book-actions">
             <button class="btn btn-ghost" (click)="startEdit(book.id)">Edytuj</button>
@@ -30,8 +39,12 @@
   </ul>
 
   <div class="pagination">
-    <button class="btn" (click)="previousPage()" [disabled]="currentPage() === 0">← Poprzednia</button>
+    <button class="btn" (click)="previousPage()" [disabled]="currentPage() === 0">
+      ← Poprzednia
+    </button>
     <span class="pagination-label">Strona {{ currentPage() + 1 }} z {{ totalPages() }}</span>
-    <button class="btn" (click)="nextPage()" [disabled]="currentPage() + 1 >= totalPages()">Następna →</button>
+    <button class="btn" (click)="nextPage()" [disabled]="currentPage() + 1 >= totalPages()">
+      Następna →
+    </button>
   </div>
 </section>

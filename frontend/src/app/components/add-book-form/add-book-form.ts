@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { form, FormField, required } from '@angular/forms/signals';
+import { form, FormField, min, required } from '@angular/forms/signals';
 import { BookService } from '../../services/book';
 
 @Component({
@@ -18,12 +18,14 @@ export class AddBookForm {
     status: 'TO_READ',
     startDate: '',
     finishDate: '',
+    timesRead: 0,
     notes: '',
   });
 
   protected bookForm = form(this.model, (path) => {
     required(path.title, { message: 'Tytuł jest wymagany' });
     required(path.author, { message: 'Autor jest wymagany' });
+    min(path.timesRead, 0, { message: 'Liczba przeczytań nie może być ujemna' });
   });
 
   protected duplicateError = signal(false);
@@ -55,6 +57,7 @@ export class AddBookForm {
           status: 'TO_READ',
           startDate: '',
           finishDate: '',
+          timesRead: 0,
           notes: '',
         });
         this.duplicateError.set(false);
