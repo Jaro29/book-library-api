@@ -1,19 +1,37 @@
-<h2>Lista książek</h2>
+<section class="book-list">
+  <div class="list-header">
+    <h2>Lista książek</h2>
+  </div>
 
-<ul>
-  @for (book of books(); track book.id) {
-<li>
-@if (editingBookId() === book.id) {
-  <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
-} @else {
-  {{ book.title }} — {{ book.author }} ({{ book.status }})
-  <button (click)="startEdit(book.id)">Edytuj</button>
-  <button (click)="onDelete(book.id)">Usuń</button>
-}
-</li>
-  }
-</ul>
+  <ul class="book-rows">
+    @for (book of books(); track book.id) {
+      <li class="book-row" [attr.data-status]="book.status">
+        @if (editingBookId() === book.id) {
+          <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
+        } @else {
+          <div class="book-info">
+            <span class="book-title">{{ book.title }}</span>
+            <span class="book-author">{{ book.author }}</span>
+            <span class="book-status">
+              @switch (book.status) {
+                @case ('FINISHED') { Przeczytana }
+                @case ('READING') { W trakcie }
+                @default { Do przeczytania }
+              }
+            </span>
+          </div>
+          <div class="book-actions">
+            <button class="btn btn-ghost" (click)="startEdit(book.id)">Edytuj</button>
+            <button class="btn btn-danger" (click)="onDelete(book.id)">Usuń</button>
+          </div>
+        }
+      </li>
+    }
+  </ul>
 
-<button (click)="previousPage()" [disabled]="currentPage() === 0">Poprzednia</button>
-<span>Strona {{ currentPage() + 1 }} z {{ totalPages() }}</span>
-<button (click)="nextPage()" [disabled]="currentPage() + 1 >= totalPages()">Następna</button>
+  <div class="pagination">
+    <button class="btn" (click)="previousPage()" [disabled]="currentPage() === 0">← Poprzednia</button>
+    <span class="pagination-label">Strona {{ currentPage() + 1 }} z {{ totalPages() }}</span>
+    <button class="btn" (click)="nextPage()" [disabled]="currentPage() + 1 >= totalPages()">Następna →</button>
+  </div>
+</section>

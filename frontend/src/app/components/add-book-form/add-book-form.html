@@ -1,56 +1,60 @@
-<form (submit)="onSubmit($event)">
-  <label>
-    Tytuł
-    <input type="text" [formField]="bookForm.title" />
-  </label>
+<form class="book-form" (submit)="onSubmit($event)">
+  <div class="field">
+    <label for="add-title">Tytuł</label>
+    <input id="add-title" type="text" [formField]="bookForm.title" />
+    @if (bookForm.title().touched() && bookForm.title().invalid()) {
+      <span class="field-error">{{ bookForm.title().errors()[0].message }}</span>
+    }
+  </div>
 
-  @if (bookForm.title().touched() && bookForm.title().invalid()) {
-    <span class="error">{{ bookForm.title().errors()[0].message }}</span>
-  }
+  <div class="field">
+    <label for="add-author">Autor</label>
+    <input id="add-author" type="text" [formField]="bookForm.author" />
+    @if (bookForm.author().touched() && bookForm.author().invalid()) {
+      <span class="field-error">{{ bookForm.author().errors()[0].message }}</span>
+    }
+  </div>
 
-  <label>
-    Autor
-    <input type="text" [formField]="bookForm.author" />
-  </label>
+  <div class="field">
+    <label for="add-isbn">ISBN</label>
+    <input id="add-isbn" type="text" [formField]="bookForm.isbn" />
+  </div>
 
-  <label>
-  ISBN
-  <input type="text" [formField]="bookForm.isbn" />
-</label>
+  <div class="field">
+    <label for="add-status">Status</label>
+    <select id="add-status" [formField]="bookForm.status">
+      <option value="TO_READ">Do przeczytania</option>
+      <option value="READING">W trakcie</option>
+      <option value="FINISHED">Przeczytana</option>
+    </select>
+  </div>
 
-<label>
-  Status
-  <select [formField]="bookForm.status">
-    <option value="TO_READ">Do przeczytania</option>
-    <option value="READING">W trakcie</option>
-    <option value="FINISHED">Przeczytana</option>
-  </select>
-</label>
+  <div class="field">
+    <label for="add-start">Data rozpoczęcia</label>
+    <input id="add-start" type="date" [formField]="bookForm.startDate" />
+  </div>
 
-<label>
-  Data rozpoczęcia
-  <input type="date" [formField]="bookForm.startDate" />
-</label>
+  <div class="field">
+    <label for="add-finish">Data zakończenia</label>
+    <input id="add-finish" type="date" [formField]="bookForm.finishDate" />
+  </div>
 
-<label>
-  Data zakończenia
-  <input type="date" [formField]="bookForm.finishDate" />
-</label>
+  <div class="field field-wide">
+    <label for="add-notes">Notatki</label>
+    <textarea id="add-notes" [formField]="bookForm.notes"></textarea>
+  </div>
 
-<label>
-  Notatki
-  <textarea [formField]="bookForm.notes"></textarea>
-</label>
-
-  @if (bookForm.author().touched() && bookForm.author().invalid()) {
-    <span class="error">{{ bookForm.author().errors()[0].message }}</span>
-  }
   @if (duplicateError()) {
-    <p class="error">
-      Taka książka już istnieje.
-      <button type="button" (click)="confirmDuplicate()">Dodaj mimo to</button>
-      <button type="button" (click)="cancelDuplicate()">Anuluj</button>
-    </p>
+    <div class="field field-wide duplicate-banner">
+      <span>Taka książka już istnieje.</span>
+      <div class="duplicate-actions">
+        <button type="button" class="btn btn-primary" (click)="confirmDuplicate()">Dodaj mimo to</button>
+        <button type="button" class="btn btn-ghost" (click)="cancelDuplicate()">Anuluj</button>
+      </div>
+    </div>
   }
-  <button type="submit" [disabled]="bookForm().invalid()">Dodaj książkę</button>
+
+  <div class="field field-wide form-submit">
+    <button type="submit" class="btn btn-primary" [disabled]="bookForm().invalid()">Dodaj książkę</button>
+  </div>
 </form>
