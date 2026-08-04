@@ -229,4 +229,5 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
                 .addValue("pageSize", pageSize)
                 .addValue("offset", page * pageSize);
     }
+
 }

@@ -22,6 +22,7 @@ class BookRepositoryImplTest {
     @Autowired
     private NamedParameterJdbcTemplate jdbcTemplate;
 
+
     private BookRepositoryImpl bookRepository;
 
     @BeforeEach
@@ -90,4 +91,5 @@ class BookRepositoryImplTest {
         book.setStatus(BookStatus.TO_READ);
         return book;
     }
+
 }
