@@ -102,14 +102,13 @@ Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capac
 - [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
 
 ## Backlog / Deployment (Oracle Cloud Free Tier)
-- [ ] Instancja Ampere A1 (1 OCPU/6GB, Ubuntu 24.04) — zablokowana "Out of capacity" we wszystkich AD
-- [ ] Klucz SSH dedykowany (`~/.ssh/id_ed25519_oracle`) gotowy do wgrania
-- [ ] Do rozstrzygnięcia: ręczne ponawianie vs skrypt w Cloud Shell
+- [x] Mamy Instancję Ampere A1 (1 OCPU/6GB, Ubuntu 24.04) w AD-2
+- [x] Klucz SSH dedykowany (`~/.ssh/id_ed25519_oracle.pub`) gotowy do wgrania
 - [ ] CORS: dodać origin produkcyjny po deploymencie
 
 ## Backlog / Techniczne
 - [x] Testy service — dodano: `updateBook` gdy książka nie istnieje → `BookNotFoundException` (propagacja z repo, brak wywołania `update()`)
-- [ ] Duplikacja try/catch w `BookRepositoryImpl` (identyczny blok w ~10 metodach) — opcje: metoda pomocnicza `execute(Supplier<T>)` vs AOP; decyzja odłożona
+- [x] Duplikacja try/catch w `BookRepositoryImpl` (identyczny blok w ~10 metodach) — opcje: metoda pomocnicza `execute(Supplier<T>)` vs AOP; decyzja odłożona
 - [ ] `IsbnValidatorTest` — jeśli dodane zostaną dynamiczne komunikaty błędów w walidatorach, trzeba przepisać na Mockito
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba czyszczenia pól
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
@@ -118,4 +117,4 @@ Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capac
 - [x] Naprawiono zepsute testy frontendowe: martwy saveEdit() w BookList, zła nazwa klasy w book.spec.ts, nieaktualny placeholder w app.spec.ts, brakujący required input w EditBookForm spec, testy komponentów strzelające do prawdziwego backendu (dodano provideHttpClientTesting())
 
 ## Następny krok
-- [ ] Decyzja: Flyway teraz, czy wracamy do deploymentu na Oracle Cloud?
+- [ ] Deployment
