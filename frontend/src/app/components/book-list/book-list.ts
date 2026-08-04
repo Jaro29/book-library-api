@@ -42,10 +42,4 @@ export class BookList implements OnInit {
     this.editingBookId.set(null);
   }
 
-  saveEdit(id: number, title: string, author: string) {
-    this.bookService.updateBook(id, { title, author }).subscribe(() => {
-      this.bookService.loadBooks(this.currentPage());
-      this.editingBookId.set(null);
-    });
-  }
 }
