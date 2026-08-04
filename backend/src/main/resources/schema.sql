@@ -7,6 +7,6 @@ CREATE TABLE IF NOT EXISTS books
     status      VARCHAR(20)     NOT NULL,
     start_date  DATE,
     finish_date DATE,
-    notes       TEXT,
-    times_read  INT             NOT NULL DEFAULT 0
+    times_read  INT             NOT NULL DEFAULT 0,
+    notes       TEXT
 );

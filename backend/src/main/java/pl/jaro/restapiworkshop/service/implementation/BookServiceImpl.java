@@ -70,7 +70,7 @@ public class BookServiceImpl implements BookService {
         if (book.getTimesRead() < 0) {
             throw new InvalidTimesReadException("Liczba przeczytań nie może być ujemna.");
         }
-        if ((book.getStatus() == BookStatus.FINISHED) && book.getTimesRead() <= 0) {
+        if ((book.getStatus() == BookStatus.FINISHED) && book.getTimesRead() == 0) {
             throw new InvalidTimesReadException("Wpisz przynajmniej 1 jeśli książka przeczytana.");
         }
     }
