@@ -8,9 +8,6 @@ spring:
     console:
       enabled: true
       path: /h2-console
-  sql:
-    init:
-      data-locations: classpath:data-dev.sql
 logging:
   level:
     org.springframework: DEBUG

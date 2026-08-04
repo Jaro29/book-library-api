@@ -19,6 +19,7 @@ import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static java.util.Map.of;
 import static java.util.Objects.requireNonNull;
@@ -32,26 +33,36 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     private final NamedParameterJdbcTemplate jdbc;
 
     @Override
+    public Book create(Book book) {
+        return execute(() -> {
+                    KeyHolder holder = new GeneratedKeyHolder();
+                    SqlParameterSource parameters = getBookParameters(book);
+                    jdbc.update(INSERT_BOOK_QUERY, parameters, holder, new String[]{"id"});
+                    book.setId(requireNonNull(holder.getKey()).longValue());
+                    return book;
+                }
+        );
+    }
+
+    @Override
     public boolean existsByTitleAndAuthor(String title, String author) {
-        try {
-            Integer count = jdbc.queryForObject(
-                    COUNT_BOOK_TITLE_AUTHOR_QUERY,
-                    of(
-                            "title", title.trim().toLowerCase(),
-                            "author", author.trim().toLowerCase()
-                    ),
-                    Integer.class
-            );
-            return count != null && count > 0;
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        return execute(() -> {
+                    Integer count = jdbc.queryForObject(
+                            COUNT_BOOK_TITLE_AUTHOR_QUERY,
+                            of(
+                                    "title", title.trim().toLowerCase(),
+                                    "author", author.trim().toLowerCase()
+                            ),
+                            Integer.class
+                    );
+                    return count != null && count > 0;
+                }
+        );
     }
 
     @Override
     public boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id) {
-        try {
+        return execute(() -> {
             Integer count = jdbc.queryForObject(
                     COUNT_BOOK_TITLE_AUTHOR_EXCLUDING_ID_QUERY,
                     of(
@@ -62,65 +73,37 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
                     Integer.class
             );
             return count != null && count > 0;
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
-    }
-
-    @Override
-    public Book create(Book book) {
-
-        try {
-            KeyHolder holder = new GeneratedKeyHolder();
-            SqlParameterSource parameters = getBookParameters(book);
-            jdbc.update(INSERT_BOOK_QUERY, parameters, holder, new String[]{"id"});
-            book.setId(requireNonNull(holder.getKey()).longValue());
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
-        return book;
+        });
     }
 
     @Override
     public Collection<Book> findAll(int page, int pageSize) {
-        try {
-
-            return jdbc.query(SELECT_ALL_BOOKS_QUERY, getPaginationParameters(page, pageSize), new BookRowMapper());
-
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        return execute(() -> jdbc.query(SELECT_ALL_BOOKS_QUERY,
+                getPaginationParameters(page, pageSize), new BookRowMapper()));
     }
 
     @Override
     public int countAll() {
-        try {
+        return execute(() -> {
             Integer count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, Map.of(), Integer.class);
             return count != null ? count : 0;
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        });
     }
 
     @Override
     public Book findById(Long id) {
-        try {
-            return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id), new BookRowMapper());
-        } catch (EmptyResultDataAccessException exception) {
-            throw new BookNotFoundException("Nie znaleziono książki id: " + id);
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        return execute(() -> {
+            try {
+                return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id), new BookRowMapper());
+            } catch (EmptyResultDataAccessException exception) {
+                throw new BookNotFoundException("Nie znaleziono książki id: " + id);
+            }
+        });
     }
 
     @Override
     public Book update(Book book) {
-        try {
+        return execute(() -> {
             SqlParameterSource parameters = getBookParameters(book);
 
             int updatedRows = jdbc.update(UPDATE_BOOK_QUERY, parameters);
@@ -130,76 +113,63 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
             }
 
             return book;
-
-        } catch (BookNotFoundException exception) {
-            throw exception;
-
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        });
     }
 
     @Override
     public void delete(Long id) {
-        try {
+        execute(() -> {
             int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
             if (deletedRows == 0) {
                 throw new BookNotFoundException("Nie znaleziono książki id: " + id);
             }
-        } catch (BookNotFoundException exception) {
-            throw exception;
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+            return null;
+        });
     }
 
     @Override
     public Book getBookByIsbn(String isbn) {
-        try {
-            return jdbc.queryForObject(SELECT_BOOK_BY_ISBN_QUERY, of("isbn", isbn), new BookRowMapper());
-        } catch (EmptyResultDataAccessException exception) {
-            throw new BookNotFoundException("Nie znaleziono książki o isbn: " + isbn);
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        return execute(() -> {
+            try {
+                return jdbc.queryForObject(SELECT_BOOK_BY_ISBN_QUERY, of("isbn", isbn), new BookRowMapper());
+            } catch (EmptyResultDataAccessException exception) {
+                throw new BookNotFoundException("Nie znaleziono książki o isbn: " + isbn);
+            }
+        });
     }
 
     @Override
     public Collection<Book> getBooksByTitle(String title, int page, int pageSize) {
-        try {
+        return execute(() -> {
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("title", title.trim().toLowerCase());
             return jdbc.query(SELECT_BOOKS_BY_TITLE_QUERY, params, new BookRowMapper());
-
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        });
     }
 
     @Override
     public Collection<Book> getBooksByAuthor(String author, int page, int pageSize) {
-        try {
+        return execute(() -> {
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("author", author.trim().toLowerCase());
             return jdbc.query(SELECT_BOOKS_BY_AUTHOR_QUERY, params, new BookRowMapper());
-
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-            throw new ApiException("Błąd. Spróbuj ponownie.");
-        }
+        });
     }
 
     @Override
     public Collection<Book> getBooksByStatus(BookStatus status, int page, int pageSize) {
-        try {
+        return execute(() -> {
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("status", status.name());
             return jdbc.query(SELECT_BOOKS_BY_STATUS_QUERY, params, new BookRowMapper());
+        });
+    }
 
+    private <T> T execute(Supplier<T> action) {
+        try {
+            return action.get();
+        } catch (BookNotFoundException exception) {
+            throw exception;
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             throw new ApiException("Błąd. Spróbuj ponownie.");
