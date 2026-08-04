@@ -108,7 +108,7 @@ Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capac
 - [ ] CORS: dodać origin produkcyjny po deploymencie
 
 ## Backlog / Techniczne
-- [ ] Testy service — brakuje: `updateBook` gdy książka nie istnieje → `BookNotFoundException` (propagacja z repo)
+- [x] Testy service — dodano: `updateBook` gdy książka nie istnieje → `BookNotFoundException` (propagacja z repo, brak wywołania `update()`)
 - [ ] Duplikacja try/catch w `BookRepositoryImpl` (identyczny blok w ~10 metodach) — opcje: metoda pomocnicza `execute(Supplier<T>)` vs AOP; decyzja odłożona
 - [ ] `IsbnValidatorTest` — jeśli dodane zostaną dynamiczne komunikaty błędów w walidatorach, trzeba przepisać na Mockito
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba czyszczenia pól

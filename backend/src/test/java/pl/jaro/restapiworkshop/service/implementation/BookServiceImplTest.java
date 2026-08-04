@@ -5,21 +5,26 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.EmptyResultDataAccessException;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
+import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.exception.DuplicateBookException;
 import pl.jaro.restapiworkshop.exception.InvalidTimesReadException;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
+import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static pl.jaro.restapiworkshop.query.BookQuery.SELECT_BOOK_BY_ID_QUERY;
 
 @ExtendWith(MockitoExtension.class)
 class BookServiceImplTest {
@@ -166,6 +171,26 @@ class BookServiceImplTest {
     }
 
     @Test
+    void shouldRejectUpdateWhenBookDoesNotExist() {
+
+        // Arrange
+        Long bookId = 1L;
+
+        when(bookRepository.findById(bookId)).thenThrow(new BookNotFoundException("Nie znaleziono książki id: " + bookId));
+
+        BookPatchRequest request = new BookPatchRequest(
+                "Lalka", "Bolesław Prus", null,
+                null, null, null, null, null
+        );
+
+        // Act + Assert
+        assertThrows(BookNotFoundException.class,
+                () -> bookService.updateBook(bookId, request));
+
+        verify(bookRepository, never()).update(any());
+    }
+
+    @Test
     void shouldCalculateTotalPagesWhenNotEvenlyDivisible() {
         // Arrange
         int page = 0;
@@ -183,7 +208,7 @@ class BookServiceImplTest {
     }
 
     @Test
-    void shouldReturnZeroTotalPagesWhenNoElements(){
+    void shouldReturnZeroTotalPagesWhenNoElements() {
         // Arrange
         int page = 0;
         int pageSize = 20;
