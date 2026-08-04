@@ -95,10 +95,10 @@ Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capac
 - [ ] ownership (enum `BookOwnership`), source
 
 ## Backlog / Migracje bazy danych
-- [ ] Wdrożyć Flyway zamiast `schema.sql` (app + test)
-- [ ] `V1__create_books_table.sql` jako pierwsza migracja
-- [ ] Usunąć `spring.sql.init.*` i pliki `schema.sql` po wdrożeniu
-- [ ] `data-dev.sql` zostaje wyłącznie jako seed dla profilu `dev`
+- [x] Wdrożyć Flyway zamiast `schema.sql` (app + test)
+- [x] `V1__create_books_table.sql` jako pierwsza migracja
+- [x] Usunąć `spring.sql.init.*` i pliki `schema.sql` po wdrożeniu
+- [x] `data-dev.sql` zostaje wyłącznie jako seed dla profilu `dev`
 - [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
 
 ## Backlog / Deployment (Oracle Cloud Free Tier)
@@ -113,6 +113,9 @@ Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capac
 - [ ] `IsbnValidatorTest` — jeśli dodane zostaną dynamiczne komunikaty błędów w walidatorach, trzeba przepisać na Mockito
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba czyszczenia pól
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
+
+## Backlog / Techniczne
+- [x] Naprawiono zepsute testy frontendowe: martwy saveEdit() w BookList, zła nazwa klasy w book.spec.ts, nieaktualny placeholder w app.spec.ts, brakujący required input w EditBookForm spec, testy komponentów strzelające do prawdziwego backendu (dodano provideHttpClientTesting())
 
 ## Następny krok
 - [ ] Decyzja: Flyway teraz, czy wracamy do deploymentu na Oracle Cloud?
