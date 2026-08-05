@@ -55,3 +55,9 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 ## Notatki / rzeczy do pamiętania
 - Test lokalny robiliśmy na porcie **3307** (bo systemowa MariaDB na laptopie zajmowała 3306) — w `docker-compose.yml` **nie** będzie tego konfliktu, bo kontenery mają własną sieć
 - `DevDataSeeder` (dane testowe) uruchamia się **tylko** w profilu `dev` — na serwerze (`prod`) baza startuje pusta, trzeba będzie ręcznie dodać pierwsze książki przez UI/API
+- **`host.docker.internal` na natywnym Linuksie** (nie Docker Desktop) wymaga jawnej flagi przy `docker run`: `--add-host=host.docker.internal:host-gateway`. Bez tego kontener nie rozwiąże tej nazwy (`UnknownHostException`)
+- **`ufw` blokuje ruch z kontenerów do hosta domyślnie** (`deny incoming`) — jeśli kontener nie może połączyć się z usługą uruchomioną na hoście (np. bazą danych spoza Dockera), sprawdź `sudo ufw status verbose` i dodaj regułę: `sudo ufw allow from <podsieć-dockera, np. 172.17.0.0/16> to any port <port> proto tcp`. **To dotyczy tylko** scenariusza "kontener → usługa na hoście" — w `docker-compose.yml`, gdzie wszystko jest w kontenerach w tej samej sieci Compose, ten problem nie występuje
+
+## backend/Dockerfile — zweryfikowany end-to-end
+- [x] Zbudowany lokalnie (`docker build -t book-library-backend ./backend`)
+- [x] Uruchomiony jako kontener, połączony z testową MariaDB (Docker), Flyway zastosował migrację, `GET /books` zwrócił 200
