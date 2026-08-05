@@ -1,10 +1,10 @@
 # PROGRESS.md — rest-api-workshop (book-library-api)
 
 ## Aktualny etap
-Backend: pełny CRUD + walidacja biznesowa + testy Mockito ✅.
-Frontend: pełny CRUD z UI (Angular 22, Signal Forms) + stylowanie ✅.
-Sprzątanie: usunięto martwy kod (`BookUpdateRequest`, `BookStatus.ABANDONED`) ✅.
-Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capacity") — do wyboru na następnej sesji.
+Backend: pełny CRUD + walidacja biznesowa + testy Mockito + Flyway ✅.
+Frontend: pełny CRUD z UI (Angular 22, Signal Forms) + stylowanie + environments (dev/prod) ✅.
+Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) — **zweryfikowane end-to-end lokalnie** ✅.
+Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na serwerze — **transfer i uruchomienie na serwerze jeszcze do zrobienia**.
 
 ---
 
@@ -29,92 +29,86 @@ Otwarte: migracje (Flyway) i deployment (Oracle Cloud, zablokowany "Out of capac
 - Status: **zaimplementowane, przetestowane (Mockito: totalPages, edge case 0 elementów), zmergowane**
 
 ### PATCH /books/{id}
-- Request: `BookPatchRequest`, wszystkie pola opcjonalne; `null` = "nie zmieniaj" (świadome uproszczenie, patrz Backlog)
+- Request: `BookPatchRequest`, wszystkie pola opcjonalne; `null` = "nie zmieniaj"
 - 400: walidacja ISBN/timesRead na finalnym, zmergowanym obiekcie
 - 404: `BookNotFoundException`
 - 409: `DuplicateBookException` — sprawdzane z pominięciem własnego id (`existsByTitleAndAuthorExcludingId`)
 - 200: zwraca zaktualizowany `BookResponse`
-- Status: **zaimplementowane, zmergowane** (naprawiony bug: brak `.id(...)` w mapperze powodował update z `id: null`)
+- Status: **zaimplementowane, zmergowane**
 
 ### DELETE /books/{id}
 - 204: sukces, bez body
 - 404: `BookNotFoundException`
-- Status: **zaimplementowane, zmergowane** (repo/service: `void` zamiast `boolean` — boolean nigdy realnie nie zwracał false)
+- Status: **zaimplementowane, zmergowane**
 
 ### CORS
 - `WebMvcConfigurer`, `/**`, allowedOrigins `http://localhost:4200`, metody GET/POST/PATCH/DELETE
-- Status: **skonfigurowane** — do rozszerzenia o origin produkcyjny przy deploymencie
+- Status: **skonfigurowane** — do rozszerzenia o origin produkcyjny przy finalnym deploymencie
 
 ### Frontend — UI
-- `BookList`: lista + paginacja (prev/next, zachowanie strony po add/edit/delete), delete inline, edit inline (`EditBookForm` jako dziecko via `@Input`/`@Output`)
-- `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól (title, author, isbn, status-select, dates, timesRead z `min(0)`, notes), obsługa 409 z opcją "Dodaj mimo to"/Anuluj
-- Stan współdzielony przez `BookService` (signals: `books`, `currentPage`, `totalPages`) — komponenty nie trzymają własnych kopii listy
-- Stylowanie: ciemny motyw "biblioteka" (Fraunces/Lora/IBM Plex Mono, brąz/marigold/ember/szałwia), kolorowy pasek statusu z lewej strony wiersza
+- `BookList`: lista + paginacja, delete inline, edit inline (`EditBookForm`)
+- `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól, obsługa 409
+- Stan współdzielony przez `BookService` (signals)
+- Stylowanie: ciemny motyw "biblioteka"
+- `environment.ts`/`environment.prod.ts` — `apiUrl` przełączany przez `fileReplacements` w `angular.json` (dev: `http://localhost:8080`, prod: `/api`)
 - Status: **zaimplementowane, zmergowane**
 
 ---
 
-## Decyzje architektoniczne i biznesowe
+## Docker / Infrastruktura
 
-### Backend — ogólne
-- Raw JDBC (`NamedParameterJdbcTemplate`) zamiast JPA — celowo, pod kątem pełnej kontroli nad SQL w przyszłych projektach wymagających bezpieczeństwa
-- Mapowanie DTO ↔ model: statyczne metody w `BookMapper` (nie BeanUtils/reflection)
-- Błędy domenowe — trzy osobne wyjątki bez znajomości HTTP: `BookNotFoundException` (404), `DuplicateBookException` (409), `ApiException` (500, tylko dla realnych awarii infrastruktury/bazy) — `GlobalExceptionHandler` mapuje na kody HTTP
-- Metody repo/service zwracające `void` zamiast `boolean`, gdy jedyna droga niesukcesu to wyjątek (delete)
-- `data-dev.sql` odseparowany od kontekstu testowego (ładowany tylko przez `application-dev.yml`)
-- Branch model: `main → develop → feature/<verb-noun>-<what>`, bez numeracji etapów
+### backend/Dockerfile
+- Multi-stage: `maven:3.9-eclipse-temurin-25` (build) → `eclipse-temurin:25-jre` (finalny)
+- Status: **zbudowany, przetestowany jako pojedynczy kontener z MariaDB (test), zweryfikowany w docker-compose**
 
-### Duplikaty książek
-- Duplikat = ten sam tytuł i autor, case-insensitive; sprawdzany w serwisie przed create i update (update z pominięciem własnego id)
-- `POST` pozwala świadomie pominąć blokadę przez `allowDuplicate=true`
-- Brak `UNIQUE(title, author)` w bazie — celowe, aplikacja jednoosobowa, duplikat czasem pożądany
-- ISBN nie definiuje duplikatu biznesowego — może być pusty, nie blokuje innego wydania tej samej książki
+### frontend/Dockerfile + nginx.conf
+- Multi-stage: `node:22-alpine` (build) → `nginx:alpine` (serwowanie statycznych plików)
+- `nginx.conf`: `location /` → SPA fallback (`try_files ... /index.html`); `location /api/` → `proxy_pass http://backend:8080/`
+- Status: **zbudowany, przetestowany, reverse proxy działa poprawnie w docker-compose**
 
-### Reguły biznesowe — rozstrzygnięte
-- `TO_READ` → `finishDate` musi być null / `FINISHED` → `finishDate` nie może być null — **ODRZUCONE**. `finishDate` zawsze opcjonalne, niezależnie od statusu
-- `FINISHED` wymaga `timesRead > 0`, `timesRead` nigdy ujemne — **PRZYJĘTE** i zaimplementowane (`InvalidTimesReadException`, 400)
+### docker-compose.yml
+- Trzy serwisy: `mariadb` (z nazwanym wolumenem `mariadb-data` dla trwałości danych), `backend`, `frontend`
+- Tylko `frontend` ma wystawiony port (80) na zewnątrz — `backend`/`mariadb` dostępne tylko wewnątrz sieci Compose
+- `restart: unless-stopped` na wszystkich serwisach — backend automatycznie restartuje się, jeśli MariaDB nie zdąży wystartować pierwsza (znany "wyścig" przy pierwszym starcie, nieblokujący)
+- Status: **zweryfikowany end-to-end lokalnie — `GET http://localhost/api/books` zwraca 200, cały stos żyje i się komunikuje**
 
-### Sprzątanie / usunięty kod
-- `BookUpdateRequest` — usunięty, pozostałość po planowanym `PUT`, który nigdy nie powstał
-- `BookStatus.ABANDONED` — usunięty, nigdy nie było wpięte we frontend ani w walidację; zweryfikowane grepem w całym repo (poza `node_modules`) i w danych dev
-
-### Frontend
-- Monorepo: `backend/` + `frontend/` w jednym repo (jeden VM na Oracle Cloud = jeden docker-compose)
-- Angular 22, standalone components, Signal Forms (`form()`/`FormField`/`required()`/`min()`), sygnały jako domyślny mechanizm stanu (nie Reactive Forms)
-- Komunikacja rodzic-dziecko: `input.required<T>()` / `output<void>()` (nowoczesny `@Input`/`@Output`)
-- `:host { display: contents; }` na komponentach-formularzach osadzonych w `<li>` — unika dodatkowego inline-wrappera
-- CORS wymagany do komunikacji z `localhost:4200`
+### .env
+- Zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
+- **WAŻNE — incydent i naprawa:** `.env` z placeholderami (`zmien_to_haslo`) został przypadkiem scommitowany (błąd w `.gitignore` — dwie linie sklejone przez `echo >>` bez nowej linii na końcu pliku). Usunięty ze śledzenia (`git rm --cached`), `.gitignore` naprawiony. Placeholdery, nie prawdziwe hasła — ryzyko minimalne, repo prywatne, ale **prawdziwe hasła produkcyjne trzeba wygenerować od nowa, nigdy nie commitować**
 
 ---
 
+## Backlog / Deployment (Oracle Cloud Free Tier) — plan w DEPLOYMENT.md
+
+- [x] Instancja Ampere A1 (1 OCPU/6GB, Ubuntu 24.04, AD-2) — utworzona po kilku próbach ("Out of capacity" — częsty problem Free Tier)
+- [x] Klucz SSH dedykowany, dostęp do serwera potwierdzony
+- [x] System zaktualizowany, Docker + Docker Compose zainstalowane na serwerze
+- [x] Docker + Docker Compose zainstalowane też na laptopie (do lokalnych testów)
+- [x] Cały stos (`docker compose up --build`) zweryfikowany lokalnie — działa poprawnie
+- [ ] Wygenerować prawdziwe, silne hasła do `.env` (produkcyjne)
+- [ ] Transfer repo na serwer (`git clone`), `.env` stworzony ręcznie na serwerze
+- [ ] `docker compose up -d --build` na serwerze
+- [ ] Otworzyć port 80 w Security List / NSG na Oracle
+- [ ] Test z zewnątrz (z innej maszyny niż serwer)
+- [ ] CORS: dodać origin produkcyjny w `WebConfig`
+- [ ] Później: domena + HTTPS, rozważenie przejścia na budowanie lokalne + rejestr obrazów (jeśli budowanie na serwerze okaże się zbyt wolne)
+
+## Backlog / Migracje bazy danych
+- [x] Flyway wdrożony, `V1__create_books_table.sql`, zweryfikowany na H2 i prawdziwej MariaDB
+- [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
+
 ## Backlog / Model Book — planowane rozszerzenia
-- [ ] coverUrl, dateAdded, favorite, tags (String lub encja Tag)
+- [ ] coverUrl, dateAdded, favorite, tags
 - [ ] publisher, publishYear, language, category
 - [ ] series, seriesNumber
 - [ ] pages, duration
-- [ ] ownership (enum `BookOwnership`), source
-
-## Backlog / Migracje bazy danych
-- [x] Wdrożyć Flyway zamiast `schema.sql` (app + test)
-- [x] `V1__create_books_table.sql` jako pierwsza migracja
-- [x] Usunąć `spring.sql.init.*` i pliki `schema.sql` po wdrożeniu
-- [x] `data-dev.sql` zostaje wyłącznie jako seed dla profilu `dev`
-- [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
-
-## Backlog / Deployment (Oracle Cloud Free Tier)
-- [x] Mamy Instancję Ampere A1 (1 OCPU/6GB, Ubuntu 24.04) w AD-2
-- [x] Klucz SSH dedykowany (`~/.ssh/id_ed25519_oracle.pub`) gotowy do wgrania
-- [ ] CORS: dodać origin produkcyjny po deploymencie
+- [ ] ownership (enum), source
 
 ## Backlog / Techniczne
-- [x] Testy service — dodano: `updateBook` gdy książka nie istnieje → `BookNotFoundException` (propagacja z repo, brak wywołania `update()`)
-- [x] Duplikacja try/catch w `BookRepositoryImpl` (identyczny blok w ~10 metodach) — opcje: metoda pomocnicza `execute(Supplier<T>)` vs AOP; decyzja odłożona
-- [ ] `IsbnValidatorTest` — jeśli dodane zostaną dynamiczne komunikaty błędów w walidatorach, trzeba przepisać na Mockito
-- [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba czyszczenia pól
+- [ ] `IsbnValidatorTest` — przepisać na Mockito, jeśli dodane zostaną dynamiczne komunikaty błędów
+- [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
-
-## Backlog / Techniczne
-- [x] Naprawiono zepsute testy frontendowe: martwy saveEdit() w BookList, zła nazwa klasy w book.spec.ts, nieaktualny placeholder w app.spec.ts, brakujący required input w EditBookForm spec, testy komponentów strzelające do prawdziwego backendu (dodano provideHttpClientTesting())
+- [ ] docker-compose: rozważyć `healthcheck` na MariaDB + `condition: service_healthy`, żeby uniknąć restartu backendu przy pierwszym starcie
 
 ## Następny krok
-- [ ] Deployment
+- [ ] Deployment na serwer Oracle (transfer, `.env` produkcyjny, uruchomienie, firewall, test z zewnątrz)
