@@ -15,7 +15,7 @@ public final class BookMapper {
         return Book.builder()
                 .title(createRequest.title())
                 .author(createRequest.author())
-                .isbn(createRequest.isbn())
+                .isbn(normalizeIsbn(createRequest.isbn()))
                 .status(createRequest.status() != null ? createRequest.status() : BookStatus.TO_READ)
                 .startDate(createRequest.startDate())
                 .finishDate(createRequest.finishDate())
@@ -29,7 +29,7 @@ public final class BookMapper {
                 .id(book.getId())
                 .title(patchRequest.title() != null ? patchRequest.title() : book.getTitle())
                 .author(patchRequest.author() != null ? patchRequest.author() : book.getAuthor())
-                .isbn(patchRequest.isbn() != null ? patchRequest.isbn() : book.getIsbn())
+                .isbn(patchRequest.isbn() != null ? normalizeIsbn(patchRequest.isbn()) : book.getIsbn())
                 .status(patchRequest.status() != null ? patchRequest.status() : book.getStatus())
                 .startDate(patchRequest.startDate() != null ? patchRequest.startDate() : book.getStartDate())
                 .finishDate(patchRequest.finishDate() != null ? patchRequest.finishDate() : book.getFinishDate())
@@ -50,5 +50,9 @@ public final class BookMapper {
                 book.getTimesRead(),
                 book.getNotes()
         );
+    }
+
+    private static String normalizeIsbn(String isbn) {
+        return (isbn == null || isbn.isBlank()) ? null : isbn;
     }
 }
