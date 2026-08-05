@@ -35,16 +35,66 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 ## Do zrobienia — kolejność
 
 ### 1. Bezpieczeństwo przed wysłaniem na serwer
-- [ ] Wygenerować **prawdziwe, silne** hasła do `.env` produkcyjnego (obecne to placeholdery `zmien_to_haslo`)
+- [x] Wygenerować **prawdziwe, silne** hasła do `.env` produkcyjnego (obecne to placeholdery `zmien_to_haslo`)
 
 ### 2. Konfiguracja produkcyjna
 - [ ] CORS w `WebConfig` — dodać origin produkcyjny (adres/domenę, pod którą będzie dostępny frontend na Oracle)
 
 ### 3. Transfer i uruchomienie na serwerze (opcja A: build na serwerze)
-- [ ] `git clone` repo na serwerze
-- [ ] Stworzyć `.env` **na serwerze** (ręcznie, z prawdziwymi hasłami, nigdy przez git)
-- [ ] `docker compose up -d --build` na serwerze
-- [ ] Sprawdzić logi (`docker compose logs -f`) — Flyway, start aplikacji, nginx
+- [x] `git clone` repo na serwerze
+- [x] Stworzyć `.env` **na serwerze** (ręcznie, z prawdziwymi hasłami, nigdy przez git)
+- [x] `docker compose up -d --build` na serwerze
+- [x] Sprawdzić logi (`docker compose logs -f`) — Flyway, start aplikacji, nginx
+
+## Standardowa procedura aktualizacji zdeployowanej aplikacji
+
+Gdy zmieniasz kod i chcesz wdrożyć poprawkę na już działający serwer:
+
+### 1. Zmiana lokalnie (desktop/laptop)
+```bash
+git checkout develop
+git pull
+# ...wprowadź zmianę w kodzie...
+```
+
+### 2. Test lokalny
+Backend: `cd backend && ./mvnw test`
+Frontend: build/testy odpowiednie do zmiany
+
+### 3. Commit, PR, merge (jak zwykle)
+```bash
+git checkout -b fix/<opis>
+git add .
+git commit -m "..."
+git push -u origin fix/<opis>
+gh pr create --base develop --head fix/<opis> --title "..." --body "..."
+gh pr merge --squash --delete-branch
+```
+
+### 4. Wdrożenie na serwer
+```bash
+ssh -i ~/.ssh/id_ed25519_oracle ubuntu@141.147.39.244
+cd book-library-api
+git pull
+```
+
+### 5. Przebuduj tylko to, co się zmieniło
+- Zmiana tylko w backendzie: `docker compose up -d --build backend`
+- Zmiana tylko we frontendzie: `docker compose up -d --build frontend`
+- Zmiana w obu / niepewność: `docker compose up -d --build`
+
+**Dlaczego przebudowywać selektywnie:** szybsze (np. ~36s dla samego backendu vs kilka minut dla całego stosu), i **nie dotyka** kontenera `mariadb` — dane w wolumenie `mariadb-data` pozostają nienaruszone niezależnie od tego, co przebudowujesz.
+
+### 6. Weryfikacja
+```bash
+docker compose logs backend --tail=20   # albo frontend, zależnie co przebudowane
+```
+Szukaj: poprawny start (`Started RestApiWorkshopApplication`), oraz przy zmianie schematu: `Schema ... is up to date` lub `Successfully applied N migration(s)` — **nigdy** błędu Flyway o checksumie (oznaczałby edycję już zastosowanej migracji, patrz zasada w sekcji "Migracje").
+
+Na koniec: test na żywo w przeglądarce pod `http://141.147.39.244`.
+
+### Kluczowa zasada: dane przetrwają aktualizacje
+Ponieważ `mariadb-data` to nazwany wolumen Dockera (nie część kontenera), `docker compose up -d --build` na dowolnym serwisie **nigdy** nie usuwa danych z bazy — jedyny sposób ich utraty to jawne `docker compose down -v` (flaga `-v` usuwa wolumeny) — **nigdy nie używać tej flagi na serwerze produkcyjnym**, tylko lokalnie do testów.
 
 ### 4. Sieć / firewall
 - [ ] Otworzyć port 80 w Security List / NSG na Oracle (backend/MariaDB **nie** wystawione na zewnątrz — tylko frontend/nginx, zgodnie z `docker-compose.yml`)
