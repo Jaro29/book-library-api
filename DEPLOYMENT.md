@@ -45,6 +45,7 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 ## Do zrobienia
 - [ ] `healthcheck` na MariaDB + `condition: service_healthy` w compose
 - [ ] Rozważyć budowanie lokalne + rejestr obrazów, jeśli budowanie na serwerze okaże się zbyt wolne
+- [ ] CI/CD: automatyczne wdrażanie przez GitHub Actions (trigger na push do `develop`, SSH do serwera przez sekret, `git pull` + `docker compose up -d --build`) — obecnie proces w pełni ręczny
 
 ## Standardowa procedura aktualizacji zdeployowanej aplikacji
 
