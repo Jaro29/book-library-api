@@ -40,9 +40,15 @@ public class BookController {
     }
 
     @GetMapping("/books")
-    public ResponseEntity<PageResponse<BookResponse>> findAllBooks(@RequestParam(defaultValue = "0") @Min(0) int page,
-                                                                   @RequestParam(defaultValue = "20") @Min(1) int pageSize) {
-        PageResponse<Book> pageResponse = bookService.findAllBooks(page, pageSize);
+    public ResponseEntity<PageResponse<BookResponse>> findAllBooks(
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) int pageSize,
+            @RequestParam(required = false) String search) {
+
+        PageResponse<Book> pageResponse = (search != null && !search.isBlank())
+                ? bookService.searchBooks(search, page, pageSize)
+                : bookService.findAllBooks(page, pageSize);
+
         List<BookResponse> content = pageResponse.content().stream()
                 .map(BookMapper::fromBook)
                 .toList();

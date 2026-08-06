@@ -14,4 +14,8 @@ public interface BookSearchRepository {
     Collection<Book> getBooksByAuthor(String author, int page, int pageSize);
 
     Collection<Book> getBooksByStatus(BookStatus status, int page, int pageSize);
+
+    Collection<Book> searchBooks(String search, int page, int pageSize);
+
+    int countBySearch(String search);
 }

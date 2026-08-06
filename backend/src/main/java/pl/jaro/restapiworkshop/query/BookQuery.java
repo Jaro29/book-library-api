@@ -63,6 +63,19 @@ public final class BookQuery {
             LIMIT :pageSize OFFSET :offset
             """;
 
+    public static final String SELECT_BOOKS_BY_SEARCH_QUERY = """
+            SELECT * FROM books
+            WHERE LOWER(title) LIKE :search OR LOWER(author) LIKE :search
+            ORDER BY id
+            LIMIT :pageSize OFFSET :offset
+            """;
+
+    public static final String COUNT_BOOKS_BY_SEARCH_QUERY = """
+            SELECT COUNT(*)
+            FROM books
+            WHERE LOWER(title) LIKE :search OR LOWER(author) LIKE :search
+            """;
+
     public static final String SELECT_BOOKS_BY_STATUS_QUERY = """
             SELECT * FROM books
             WHERE status = :status

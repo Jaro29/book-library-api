@@ -18,6 +18,7 @@ import pl.jaro.restapiworkshop.repository.BookSearchRepository;
 import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 
@@ -162,6 +163,25 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("status", status.name());
             return jdbc.query(SELECT_BOOKS_BY_STATUS_QUERY, params, new BookRowMapper());
+        });
+    }
+
+    @Override
+    public Collection<Book> searchBooks(String search, int page, int pageSize) {
+        return execute(() -> {
+            String searchParam = String.format("%%%s%%", search.trim().toLowerCase());
+            SqlParameterSource params = getPaginationParameters(page, pageSize)
+                    .addValue("search", searchParam);
+            return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY, params, new BookRowMapper());
+        });
+    }
+
+    @Override
+    public int countBySearch(String search) {
+        return execute(() -> {
+            String searchParam = String.format("%%%s%%", search.trim().toLowerCase());
+            Integer count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY, of("search", searchParam), Integer.class);
+            return count != null ? count : 0;
         });
     }
 
