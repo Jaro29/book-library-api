@@ -28,6 +28,17 @@ services:
       - backend
     ports:
       - "80:80"
+    volumes:
+      - certbot-etc:/etc/letsencrypt:ro
+      - certbot-www:/var/www/certbot
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - certbot-etc:/etc/letsencrypt
+      - certbot-www:/var/www/certbot
 
 volumes:
   mariadb-data:
+  certbot-etc:
+  certbot-www:
