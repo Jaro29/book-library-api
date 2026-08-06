@@ -134,6 +134,8 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [ ] `IsbnValidatorTest` — przepisać na Mockito, jeśli dodane zostaną dynamiczne komunikaty błędów
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
+- [ ] Testy dla `searchBooks`/`countBySearch` w `BookRepositoryImplTest` (fragment w tytule/autorze, case-insensitive, brak wyników, zgodność count z wynikami)
+- [ ] Ujednolicić konwencję nazewnictwa metod serwis/repo (obecnie niespójne: część metod dodaje jawne "Book"/"Books" w serwisie, część nie)
 
 ## Następny krok
 - [ ] Poprawki UI (kolejność): 4) wyszukiwarka + zwijany formularz dodawania, 1) potwierdzenie usuwania, 2) status jako kolorowa plakietka, 3) ikonki na przyciskach Edytuj/Usuń — wdrożenie razem, po kilku zmianach, nie po każdej osobno

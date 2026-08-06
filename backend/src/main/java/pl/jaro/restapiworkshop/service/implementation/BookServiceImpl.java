@@ -12,6 +12,7 @@ import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
+import pl.jaro.restapiworkshop.repository.BookSearchRepository;
 import pl.jaro.restapiworkshop.service.BookService;
 
 import java.util.ArrayList;
@@ -20,7 +21,9 @@ import java.util.Collection;
 @Service
 @RequiredArgsConstructor
 public class BookServiceImpl implements BookService {
+
     private final BookRepository bookRepository;
+    private final BookSearchRepository bookSearchRepository;
 
     @Override
     public Book createBook(BookCreateRequest createRequest, boolean allowDuplicate) {
@@ -64,6 +67,16 @@ public class BookServiceImpl implements BookService {
     @Override
     public void deleteBook(Long id) {
         bookRepository.delete(id);
+    }
+
+    @Override
+    public PageResponse<Book> searchBooks(String search, int page, int pageSize) {
+        Collection<Book> books = bookSearchRepository.searchBooks(search, page, pageSize);
+        int totalElements = bookSearchRepository.countBySearch(search);
+
+        int totalPages = (int) Math.ceil((double) totalElements / pageSize);
+
+        return new PageResponse<>(new ArrayList<>(books), page, pageSize, totalElements, totalPages);
     }
 
     private void validateTimesRead(Book book) {
