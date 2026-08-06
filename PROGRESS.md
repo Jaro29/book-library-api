@@ -124,10 +124,16 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [ ] pages, duration
 - [ ] ownership (enum), source
 
+## Backlog / Wielu użytkowników (duża zmiana architektoniczna, na przyszłość)
+- [ ] Uwierzytelnianie — logowanie/rejestracja (Spring Security)
+- [ ] Decyzja podjęta: **jedna, wspólna baza**, nowa kolumna `user_id` na `books` (nowa migracja Flyway) — nie osobna baza per user (zbyt złożone jak na potrzeby tej aplikacji: dynamiczny routing datasource, migracje per-tenant)
+- [ ] Wszystkie metody repozytorium będą wymagały jawnego parametru `userId` (spójne z istniejącym stylem raw JDBC/named params)
+- [ ] To wymaga osobnego planowania (mini-spec, jak przy każdym endpoincie) — nie robić przy okazji mniejszych poprawek
+
 ## Backlog / Techniczne
 - [ ] `IsbnValidatorTest` — przepisać na Mockito, jeśli dodane zostaną dynamiczne komunikaty błędów
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
 
 ## Następny krok
-- [ ] CORS dla domeny produkcyjnej, potem HTTPS — albo nowa funkcja z backlogu Model Book
+- [ ] Poprawki UI (kolejność): 4) wyszukiwarka + zwijany formularz dodawania, 1) potwierdzenie usuwania, 2) status jako kolorowa plakietka, 3) ikonki na przyciskach Edytuj/Usuń — wdrożenie razem, po kilku zmianach, nie po każdej osobno

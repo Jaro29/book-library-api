@@ -22,10 +22,10 @@ Osobisty katalog książek — aplikacja do śledzenia przeczytanych, czytanych 
 
 Monorepo: `backend/` (Spring Boot) + `frontend/` (Angular), jeden `docker-compose.yml` w korzeniu spinający oba z bazą danych.
 
+
 ```mermaid
 flowchart TD
-    User[Przeglądarka] -->|":80"| Nginx[nginx]
-    Nginx -->|"/ statyczne pliki"| Static[Angular build]
+    User[Przeglądarka] -->|":80"| Nginx["frontend (nginx + Angular build)"]
     Nginx -->|"/api/* → proxy_pass"| Backend[Spring Boot :8080]
     Backend -->|JDBC| DB[(MariaDB)]
 
@@ -168,4 +168,4 @@ Obejmuje: testy repozytorium na prawdziwym H2 (`@JdbcTest`), testy jednostkowe r
 Pełny, aktualny backlog — patrz `PROGRESS.md`. Skrótowo:
 - PATCH nie rozróżnia "pole pominięte" od "pole ustawione na `null`" (świadome uproszczenie)
 - Brak dodatkowych pól modelu (okładka, tagi, wydawca, seria) — zaplanowane, nie zaimplementowane
-- Deployment na Oracle Cloud w toku — status w `DEPLOYMENT.md`
+- Deployment zakończony — aplikacja działa produkcyjnie pod https://afterword.coffe.ink (HTTPS, automatyczne odnawianie certyfikatu). Szczegóły w `DEPLOYMENT.md`
