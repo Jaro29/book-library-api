@@ -1,5 +1,7 @@
 # Book Library API
 
+**Żywa aplikacja:** [afterword.coffe.ink](http://afterword.coffe.ink)
+
 Osobisty katalog książek — aplikacja do śledzenia przeczytanych, czytanych i planowanych do przeczytania książek. Projekt nauki: REST API + SPA + konteneryzacja, budowane od zera z naciskiem na zrozumienie każdej warstwy, nie tylko "działający kod".
 
 ## Stack technologiczny

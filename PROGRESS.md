@@ -3,8 +3,8 @@
 ## Aktualny etap
 Backend: pełny CRUD + walidacja biznesowa + testy Mockito + Flyway ✅.
 Frontend: pełny CRUD z UI (Angular 22, Signal Forms) + stylowanie + environments (dev/prod) ✅.
-Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) — **zweryfikowane end-to-end lokalnie** ✅.
-Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na serwerze — **transfer i uruchomienie na serwerze jeszcze do zrobienia**.
+Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) ✅.
+**Deployment: KOMPLETNY — aplikacja żyje pod http://afterword.coffe.ink ✅**
 
 ---
 
@@ -15,7 +15,7 @@ Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na s
 - 400: walidacja DTO (ISBN checksum, timesRead ujemny, FINISHED z timesRead<=0)
 - 409: `DuplicateBookException` — duplikat title+author, gdy allowDuplicate=false
 - 201: sukces, zwraca `BookResponse`
-- Status: **zaimplementowane, przetestowane end-to-end i jednostkowo, zmergowane**
+- Status: **zaimplementowane, przetestowane end-to-end i jednostkowo, zmergowane, działa na produkcji**
 
 ### GET /books/{id}
 - 200: zwraca `BookResponse`
@@ -43,7 +43,7 @@ Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na s
 
 ### CORS
 - `WebMvcConfigurer`, `/**`, allowedOrigins `http://localhost:4200`, metody GET/POST/PATCH/DELETE
-- Status: **skonfigurowane** — do rozszerzenia o origin produkcyjny przy finalnym deploymencie
+- Status: **skonfigurowane, ale NIEAKTUALNE względem produkcji** — `afterword.coffe.ink` nie jest dodane do `allowedOrigins`. Na razie nie przeszkadza (nginx serwuje frontend i proxy do API z tego samego origin), ale to dług techniczny — patrz Backlog
 
 ### Frontend — UI
 - `BookList`: lista + paginacja, delete inline, edit inline (`EditBookForm`)
@@ -51,7 +51,7 @@ Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na s
 - Stan współdzielony przez `BookService` (signals)
 - Stylowanie: ciemny motyw "biblioteka"
 - `environment.ts`/`environment.prod.ts` — `apiUrl` przełączany przez `fileReplacements` w `angular.json` (dev: `http://localhost:8080`, prod: `/api`)
-- Status: **zaimplementowane, zmergowane**
+- Status: **zaimplementowane, zmergowane, działa na produkcji**
 
 ---
 
@@ -59,39 +59,53 @@ Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na s
 
 ### backend/Dockerfile
 - Multi-stage: `maven:3.9-eclipse-temurin-25` (build) → `eclipse-temurin:25-jre` (finalny)
-- Status: **zbudowany, przetestowany jako pojedynczy kontener z MariaDB (test), zweryfikowany w docker-compose**
+- Status: **zbudowany, przetestowany, działa na serwerze produkcyjnym**
 
 ### frontend/Dockerfile + nginx.conf
 - Multi-stage: `node:22-alpine` (build) → `nginx:alpine` (serwowanie statycznych plików)
 - `nginx.conf`: `location /` → SPA fallback (`try_files ... /index.html`); `location /api/` → `proxy_pass http://backend:8080/`
-- Status: **zbudowany, przetestowany, reverse proxy działa poprawnie w docker-compose**
+- Status: **zbudowany, przetestowany, działa na serwerze produkcyjnym**
 
 ### docker-compose.yml
 - Trzy serwisy: `mariadb` (z nazwanym wolumenem `mariadb-data` dla trwałości danych), `backend`, `frontend`
 - Tylko `frontend` ma wystawiony port (80) na zewnątrz — `backend`/`mariadb` dostępne tylko wewnątrz sieci Compose
-- `restart: unless-stopped` na wszystkich serwisach — backend automatycznie restartuje się, jeśli MariaDB nie zdąży wystartować pierwsza (znany "wyścig" przy pierwszym starcie, nieblokujący)
-- Status: **zweryfikowany end-to-end lokalnie — `GET http://localhost/api/books` zwraca 200, cały stos żyje i się komunikuje**
+- `restart: unless-stopped` na wszystkich serwisach
+- Status: **działa na produkcji od kilku dni bez przerw**
 
 ### .env
 - Zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
-- **WAŻNE — incydent i naprawa:** `.env` z placeholderami (`zmien_to_haslo`) został przypadkiem scommitowany (błąd w `.gitignore` — dwie linie sklejone przez `echo >>` bez nowej linii na końcu pliku). Usunięty ze śledzenia (`git rm --cached`), `.gitignore` naprawiony. Placeholdery, nie prawdziwe hasła — ryzyko minimalne, repo prywatne, ale **prawdziwe hasła produkcyjne trzeba wygenerować od nowa, nigdy nie commitować**
+- Lokalny (laptop) i produkcyjny (serwer) — **osobne, różne** hasła, wygenerowane przez `openssl rand -base64 24`, zapisane w KeePassXC
+- **Incydent (naprawiony):** `.env` z placeholderami przypadkiem scommitowany przez błąd w `.gitignore` (linie sklejone przez `echo >>`). Usunięty ze śledzenia, `.gitignore` naprawiony — szczegóły w `DEPLOYMENT.md`
+
+### Infrastruktura sieciowa i dostępowa
+- Publiczny IP: **141.147.39.244**, zamieniony z Ephemeral na **Reserved** (darmowe w Free Tier, nie zmieni się przy restarcie instancji)
+- Domena: **http://afterword.coffe.ink** (darmowa subdomena przez FreeDNS afraid.org, rekord A)
+- Dostęp SSH do serwera: osobne klucze z desktopa i laptopa, oba dodane do `authorized_keys`
+- Dostęp do prywatnego repo GitHub z serwera: dedykowany **deploy key** (read-only), wygenerowany bezpośrednio na serwerze
 
 ---
 
-## Backlog / Deployment (Oracle Cloud Free Tier) — plan w DEPLOYMENT.md
+## Incydent produkcyjny — naprawiony ✅
+**Bug:** pusty string w polu ISBN (`''`, domyślna wartość formularza) łamał ograniczenie `UNIQUE` w MariaDB (puste stringi liczą się jako równe, w przeciwieństwie do `NULL`) — druga książka bez ISBN dawała 500.
+**Fix:** `normalizeIsbn()` w `BookMapper` (pusty/blank → `null`), przetestowane lokalnie, zmergowane, wdrożone na serwer (`docker compose up -d --build backend`, ~36s), zweryfikowane na żywo.
 
-- [x] Instancja Ampere A1 (1 OCPU/6GB, Ubuntu 24.04, AD-2) — utworzona po kilku próbach ("Out of capacity" — częsty problem Free Tier)
-- [x] Klucz SSH dedykowany, dostęp do serwera potwierdzony
-- [x] System zaktualizowany, Docker + Docker Compose zainstalowane na serwerze
-- [x] Docker + Docker Compose zainstalowane też na laptopie (do lokalnych testów)
-- [x] Cały stos (`docker compose up --build`) zweryfikowany lokalnie — działa poprawnie
-- [ ] Wygenerować prawdziwe, silne hasła do `.env` (produkcyjne)
-- [ ] Transfer repo na serwer (`git clone`), `.env` stworzony ręcznie na serwerze
-- [ ] `docker compose up -d --build` na serwerze
-- [ ] Otworzyć port 80 w Security List / NSG na Oracle
-- [ ] Test z zewnątrz (z innej maszyny niż serwer)
-- [ ] CORS: dodać origin produkcyjny w `WebConfig`
-- [ ] Później: domena + HTTPS, rozważenie przejścia na budowanie lokalne + rejestr obrazów (jeśli budowanie na serwerze okaże się zbyt wolne)
+---
+
+## Backlog / Deployment — WSZYSTKO ZROBIONE ✅
+- [x] Instancja Ampere A1, klucz SSH, Docker na serwerze
+- [x] Pełny stos zweryfikowany lokalnie i na serwerze
+- [x] Prawdziwe hasła produkcyjne w `.env`
+- [x] Transfer repo, uruchomienie na serwerze
+- [x] Port 80 otwarty, test z zewnątrz
+- [x] Domena skonfigurowana (`afterword.coffe.ink`)
+- [x] Publiczny IP zamieniony na Reserved
+
+## Backlog / Deployment — pozostałe
+- [ ] CORS: dodać `http://afterword.coffe.ink` do `allowedOrigins` w `WebConfig`
+- [ ] HTTPS (Let's Encrypt/Certbot) — teraz, gdy jest domena, naturalny kolejny krok
+- [ ] `healthcheck` na MariaDB + `condition: service_healthy` w compose
+- [ ] Rozważyć przejście na budowanie lokalne + rejestr obrazów, jeśli budowanie na serwerze okaże się zbyt wolne
+- [ ] Pamiętać o logowaniu na FreeDNS co kilka miesięcy (inaczej subdomena może wygasnąć)
 
 ## Backlog / Migracje bazy danych
 - [x] Flyway wdrożony, `V1__create_books_table.sql`, zweryfikowany na H2 i prawdziwej MariaDB
@@ -108,7 +122,6 @@ Deployment: instancja Oracle Cloud żyje, SSH działa, Docker zainstalowany na s
 - [ ] `IsbnValidatorTest` — przepisać na Mockito, jeśli dodane zostaną dynamiczne komunikaty błędów
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) — dopiero jeśli pojawi się potrzeba
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
-- [ ] docker-compose: rozważyć `healthcheck` na MariaDB + `condition: service_healthy`, żeby uniknąć restartu backendu przy pierwszym starcie
 
 ## Następny krok
-- [ ] Deployment na serwer Oracle (transfer, `.env` produkcyjny, uruchomienie, firewall, test z zewnątrz)
+- [ ] CORS dla domeny produkcyjnej, potem HTTPS — albo nowa funkcja z backlogu Model Book
