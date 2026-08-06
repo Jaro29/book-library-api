@@ -28,6 +28,7 @@ services:
       - backend
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - certbot-etc:/etc/letsencrypt:ro
       - certbot-www:/var/www/certbot
