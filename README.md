@@ -1,6 +1,6 @@
 # Book Library API
 
-**Żywa aplikacja:** [afterword.coffe.ink](http://afterword.coffe.ink)
+**Żywa aplikacja:** [afterword.coffe.ink](https://afterword.coffe.ink)
 
 Osobisty katalog książek — aplikacja do śledzenia przeczytanych, czytanych i planowanych do przeczytania książek. Projekt nauki: REST API + SPA + konteneryzacja, budowane od zera z naciskiem na zrozumienie każdej warstwy, nie tylko "działający kod".
 
@@ -12,6 +12,7 @@ Osobisty katalog książek — aplikacja do śledzenia przeczytanych, czytanych 
 | Migracje bazy | Flyway |
 | Baza danych | MariaDB (prod), H2 in-memory (dev) |
 | Frontend | Angular 22, standalone components, Signal Forms, sygnały jako mechanizm stanu |
+| Szyfrowanie | HTTPS przez Let's Encrypt/Certbot (automatyczne odnawianie) |
 | Serwer statyczny / reverse proxy | nginx |
 | Konteneryzacja | Docker, Docker Compose (multi-stage buildy) |
 | Hosting | Oracle Cloud Free Tier (Ampere A1, Ubuntu 24.04) |
@@ -56,6 +57,8 @@ Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
 - **`ufw` blokuje ruch z kontenerów do hosta** — domyślna polityka `deny incoming` blokuje też kontenery próbujące połączyć się z usługą uruchomioną **na hoście** (nie w Dockerze). Rozwiązanie: `sudo ufw allow from <podsieć-dockera> to any port <port> proto tcp`. Nie dotyczy `docker-compose.yml`.
 - **Oracle Cloud Free Tier — "Out of capacity"** — Ampere A1 to popularny, ograniczony darmowy zasób. Brak wolnej pojemności w danym Availability Domain to normalne, nie błąd konfiguracji. Rozwiązania: ponawianie prób ręcznie, automatyzacja przez OCI Cloud Shell, albo (jak w tym projekcie) po prostu cierpliwość — w końcu się udaje.
 - **`.gitignore` i `echo >> `** — dopisywanie linii do `.gitignore` przez `echo "wzorzec" >> .gitignore` może **skleić się** z poprzednią linią, jeśli plik nie kończył się znakiem nowej linii, tworząc jeden błędny, złożony wzorzec zamiast dwóch osobnych. Zawsze weryfikuj `cat .gitignore` po takiej zmianie, nie tylko `git status`.
+- **Docker Compose `entrypoint` string vs lista** — polecenia powłoki (`trap`, `while`) w `entrypoint` trzeba owinąć jawnie: `["/bin/sh", "-c", "..."]`, inaczej Docker próbuje uruchomić pierwsze słowo jako osobny program
+- **CORS `allowedOrigins` porównuje cały origin, razem z protokołem** — `http://` i `https://` to różne originy dla przeglądarki; po migracji na HTTPS trzeba zaktualizować backend, inaczej 403 na każdym żądaniu
 
 ## Obsługa błędów
 

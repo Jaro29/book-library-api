@@ -4,7 +4,7 @@
 Backend: pełny CRUD + walidacja biznesowa + testy Mockito + Flyway ✅.
 Frontend: pełny CRUD z UI (Angular 22, Signal Forms) + stylowanie + environments (dev/prod) ✅.
 Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) ✅.
-**Deployment: KOMPLETNY — aplikacja żyje pod http://afterword.coffe.ink ✅**
+**Deployment: KOMPLETNY — HTTPS, aplikacja żyje pod https://afterword.coffe.ink ✅**
 
 ---
 
@@ -42,8 +42,8 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - Status: **zaimplementowane, zmergowane**
 
 ### CORS
-- `WebMvcConfigurer`, `/**`, allowedOrigins `http://localhost:4200`, metody GET/POST/PATCH/DELETE
-- Status: **skonfigurowane, ale NIEAKTUALNE względem produkcji** — `afterword.coffe.ink` nie jest dodane do `allowedOrigins`. Na razie nie przeszkadza (nginx serwuje frontend i proxy do API z tego samego origin), ale to dług techniczny — patrz Backlog
+- `WebMvcConfigurer`, `/**`, allowedOrigins `http://localhost:4200`, `https://afterword.coffe.ink`, metody GET/POST/PATCH/DELETE
+- Status: **skonfigurowane i zgodne z produkcją (HTTPS)** — naprawiony bug: pierwotny wpis miał `http://`, po migracji na HTTPS dawał 403 (Origin się nie zgadzał)
 
 ### Frontend — UI
 - `BookList`: lista + paginacja, delete inline, edit inline (`EditBookForm`)
@@ -89,6 +89,14 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 **Bug:** pusty string w polu ISBN (`''`, domyślna wartość formularza) łamał ograniczenie `UNIQUE` w MariaDB (puste stringi liczą się jako równe, w przeciwieństwie do `NULL`) — druga książka bez ISBN dawała 500.
 **Fix:** `normalizeIsbn()` w `BookMapper` (pusty/blank → `null`), przetestowane lokalnie, zmergowane, wdrożone na serwer (`docker compose up -d --build backend`, ~36s), zweryfikowane na żywo.
 
+## Incydent #2 — Certbot entrypoint (naprawiony przed wdrożeniem) ✅
+**Bug:** `entrypoint` w `certbot-renew` jako zwykły string zamiast listy — Docker próbował uruchomić `trap` jako osobny program.
+**Fix:** `entrypoint: ["/bin/sh", "-c", "trap exit TERM; while :; do certbot renew; sleep 12h & wait $$!; done;"]`.
+
+## Incydent #3 — CORS po migracji HTTPS (naprawiony) ✅
+**Bug:** `allowedOrigins` miał `http://afterword.coffe.ink`, ale po włączeniu HTTPS przeglądarka wysyła `Origin: https://...` — 403 na każdym żądaniu z frontendu.
+**Fix:** zmiana na `https://afterword.coffe.ink` w `WebConfig`, wdrożone (`docker compose up -d --build backend`).
+
 ---
 
 ## Backlog / Deployment — WSZYSTKO ZROBIONE ✅
@@ -101,8 +109,6 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [x] Publiczny IP zamieniony na Reserved
 
 ## Backlog / Deployment — pozostałe
-- [ ] CORS: dodać `http://afterword.coffe.ink` do `allowedOrigins` w `WebConfig`
-- [ ] HTTPS (Let's Encrypt/Certbot) — teraz, gdy jest domena, naturalny kolejny krok
 - [ ] `healthcheck` na MariaDB + `condition: service_healthy` w compose
 - [ ] Rozważyć przejście na budowanie lokalne + rejestr obrazów, jeśli budowanie na serwerze okaże się zbyt wolne
 - [ ] Pamiętać o logowaniu na FreeDNS co kilka miesięcy (inaczej subdomena może wygasnąć)
