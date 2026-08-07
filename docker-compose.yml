@@ -20,6 +20,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mariadb://mariadb:3306/${DB_NAME}
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
+      APP_USERNAME: ${APP_USERNAME}
+      APP_PASSWORD: ${APP_PASSWORD}
 
   frontend:
     build: ./frontend
