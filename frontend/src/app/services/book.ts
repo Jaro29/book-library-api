@@ -18,11 +18,17 @@ export class BookService {
   books = signal<Book[]>([]);
   currentPage = signal(0);
   totalPages = signal(0);
+  searchQuery = signal('');
   pageSize = 10;
 
   loadBooks(page: number = 0) {
+    const search = this.searchQuery();
+    const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+
     this.http
-      .get<PageResponse<Book>>(`${environment.apiUrl}/books?page=${page}&pageSize=${this.pageSize}`)
+      .get<PageResponse<Book>>(
+        `${environment.apiUrl}/books?page=${page}&pageSize=${this.pageSize}${searchParam}`
+      )
       .subscribe((response) => {
         this.books.set(response.content);
         this.currentPage.set(response.page);
