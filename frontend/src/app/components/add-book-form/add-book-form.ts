@@ -15,10 +15,10 @@ export class AddBookForm {
     title: '',
     author: '',
     isbn: '',
-    status: 'TO_READ',
+    status: 'FINISHED',
     startDate: '',
     finishDate: '',
-    timesRead: 0,
+    timesRead: 1,
     notes: '',
   });
 
@@ -29,6 +29,8 @@ export class AddBookForm {
   });
 
   protected duplicateError = signal(false);
+
+  protected generalError = signal<string | null>(null);
 
   protected onSubmit(event: Event) {
     event.preventDefault();
@@ -54,19 +56,20 @@ export class AddBookForm {
           title: '',
           author: '',
           isbn: '',
-          status: 'TO_READ',
+          status: 'FINISHED',
           startDate: '',
           finishDate: '',
-          timesRead: 0,
+          timesRead: 1,
           notes: '',
         });
         this.duplicateError.set(false);
+        this.generalError.set(null);
       },
       error: (err) => {
         if (err.status === 409) {
           this.duplicateError.set(true);
         } else {
-          console.error('Błąd:', err);
+          this.generalError.set(err.error);
         }
       },
     });

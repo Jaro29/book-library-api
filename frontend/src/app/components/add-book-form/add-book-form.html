@@ -69,4 +69,11 @@
       Dodaj książkę
     </button>
   </div>
+
+  @if (generalError()) {
+  <div class="field field-wide duplicate-banner">
+    <span>{{ generalError() }}</span>
+    <button type="button" class="btn btn-ghost" (click)="generalError.set(null)">Zamknij</button>
+  </div>
+}
 </form>
