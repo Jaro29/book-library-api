@@ -32,6 +32,11 @@ export class BookList implements OnInit {
     });
   }
 
+  onSearch(query: string) {
+    this.bookService.searchQuery.set(query);
+    this.bookService.loadBooks();
+  }
+
   editingBookId = signal<number | null>(null);
 
   startEdit(id: number) {
