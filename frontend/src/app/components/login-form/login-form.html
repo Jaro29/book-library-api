@@ -1,0 +1,22 @@
+<form (submit)="onSubmit($event)" class="login-form">
+  <h2>Logowanie</h2>
+  <div class="field">
+    <label for="login-username">Login</label>
+    <input
+      id="login-username"
+      type="text"
+      [value]="username()"
+      (input)="username.set($any($event.target).value)"
+    />
+  </div>
+  <div class="field">
+    <label for="login-password">Hasło</label>
+    <input
+      id="login-password"
+      type="password"
+      [value]="password()"
+      (input)="password.set($any($event.target).value)"
+    />
+  </div>
+  <button type="submit" class="btn btn-primary">Zaloguj</button>
+</form>
