@@ -12,7 +12,7 @@
       <div class="book-info">
         <span class="book-title">{{ book.title }}</span>
         <span class="book-author">{{ book.author }}</span>
-        <span class="book-status">
+        <span class="status-pill" [attr.data-status]="book.status">
           @switch (book.status) {
           @case ('FINISHED') {
           Przeczytana
@@ -21,7 +21,7 @@
           W trakcie
           }
           @default {
-          Przeczytana
+          Do przeczytania
           }
           }
         </span>
