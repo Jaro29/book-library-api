@@ -3,3 +3,8 @@ spring:
     active: dev
   application:
     name: rest-api-workshop
+
+app:
+  security:
+    username: ${APP_USERNAME:admin}
+    password: ${APP_PASSWORD:admin123}

@@ -1,3 +1,4 @@
+@if (authService.credentials()) {
 <header class="app-header">
   <p class="eyebrow">Katalog osobisty</p>
   <h1>Biblioteczka</h1>
@@ -35,5 +36,7 @@
   }
   <app-book-list></app-book-list>
 </main>
-
+} @else {
+  <app-login-form></app-login-form>
+}
 <router-outlet></router-outlet>
