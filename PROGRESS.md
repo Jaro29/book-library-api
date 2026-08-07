@@ -136,6 +136,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
 - [ ] Testy dla `searchBooks`/`countBySearch` w `BookRepositoryImplTest` (fragment w tytule/autorze, case-insensitive, brak wyników, zgodność count z wynikami)
 - [ ] Ujednolicić konwencję nazewnictwa metod serwis/repo (obecnie niespójne: część metod dodaje jawne "Book"/"Books" w serwisie, część nie)
+- [ ] Usuwanie: dodać stan "w trakcie" (sygnał `deletingId`, wyłączony przycisk "Tak, usuń" + tekst "Usuwanie...") i obsługę błędu przy nieudanym `deleteBook` (obecnie `onDelete` nie ma `error:` w subscribe — brak informacji dla usera przy niepowodzeniu)
 
 ## Następny krok
 - [ ] Poprawki UI (kolejność): 4) wyszukiwarka + zwijany formularz dodawania, 1) potwierdzenie usuwania, 2) status jako kolorowa plakietka, 3) ikonki na przyciskach Edytuj/Usuń — wdrożenie razem, po kilku zmianach, nie po każdej osobno

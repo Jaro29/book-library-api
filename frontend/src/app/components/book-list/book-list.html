@@ -5,36 +5,44 @@
 
   <ul class="book-rows">
     @for (book of books(); track book.id) {
-      <li class="book-row" [attr.data-status]="book.status">
-        @if (editingBookId() === book.id) {
-          <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
-        } @else {
-          <div class="book-info">
-            <span class="book-title">{{ book.title }}</span>
-            <span class="book-author">{{ book.author }}</span>
-            <span class="book-status">
-              @switch (book.status) {
-                @case ('FINISHED') {
-                  Przeczytana
-                }
-                @case ('READING') {
-                  W trakcie
-                }
-                @default {
-                  Do przeczytania
-                }
-              }
-            </span>
-            @if (book.timesRead > 0) {
-              <span class="book-times-read">×{{ book.timesRead }}</span>
-            }
-          </div>
-          <div class="book-actions">
-            <button class="btn btn-ghost" (click)="startEdit(book.id)">Edytuj</button>
-            <button class="btn btn-danger" (click)="onDelete(book.id)">Usuń</button>
-          </div>
+    <li class="book-row" [attr.data-status]="book.status">
+      @if (editingBookId() === book.id) {
+      <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
+      } @else {
+      <div class="book-info">
+        <span class="book-title">{{ book.title }}</span>
+        <span class="book-author">{{ book.author }}</span>
+        <span class="book-status">
+          @switch (book.status) {
+          @case ('FINISHED') {
+          Przeczytana
+          }
+          @case ('READING') {
+          W trakcie
+          }
+          @default {
+          Przeczytana
+          }
+          }
+        </span>
+        @if (book.timesRead > 0) {
+        <span class="book-times-read">×{{ book.timesRead }}</span>
         }
-      </li>
+      </div>
+      @if (confirmingDeleteId() === book.id) {
+      <div class="delete-confirm">
+        <span>Na pewno?</span>
+        <button class="btn btn-danger" (click)="onDelete(book.id)">Tak, usuń</button>
+        <button class="btn btn-ghost" (click)="cancelDeleteConfirmation()">Anuluj</button>
+      </div>
+      } @else {
+      <div class="book-actions">
+        <button class="btn btn-ghost" (click)="startEdit(book.id)">Edytuj</button>
+        <button class="btn btn-danger" (click)="askDeleteConfirmation(book.id)">Usuń</button>
+      </div>
+      }
+      }
+    </li>
     }
   </ul>
 
