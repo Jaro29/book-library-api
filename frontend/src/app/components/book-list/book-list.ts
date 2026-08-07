@@ -14,7 +14,6 @@ export class BookList implements OnInit {
   protected currentPage = this.bookService.currentPage;
   protected totalPages = this.bookService.totalPages;
 
-
   ngOnInit() {
     this.bookService.loadBooks();
   }
@@ -33,6 +32,17 @@ export class BookList implements OnInit {
     });
   }
 
+  
+  confirmingDeleteId = signal<number | null>(null);
+  
+  askDeleteConfirmation(id: number){
+    this.confirmingDeleteId.set(id);
+  }
+
+  cancelDeleteConfirmation(){
+    this.confirmingDeleteId.set(null);
+  }
+
   editingBookId = signal<number | null>(null);
 
   startEdit(id: number) {
@@ -42,5 +52,4 @@ export class BookList implements OnInit {
   cancelEdit() {
     this.editingBookId.set(null);
   }
-
 }

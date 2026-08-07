@@ -38,3 +38,16 @@
   font-size: 0.75rem;
   color: var(--color-marigold);
 }
+
+.delete-confirm {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.delete-confirm span {
+  font-family: var(--font-body);
+  color: var(--color-parchment-muted);
+  font-size: 0.9rem;
+}
