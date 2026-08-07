@@ -22,8 +22,8 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - 404: `BookNotFoundException`, gdy id nie istnieje
 - Status: **zaimplementowane, zmergowane**
 
-### GET /books (lista + paginacja)
-- Query params: `page` (default 0, `@Min(0)`), `pageSize` (default 20, `@Min(1)`)
+### GET /books (lista + paginacja + wyszukiwanie)
+- Query params: `page` (default 0, `@Min(0)`), `pageSize` (default 20, `@Min(1)`), `search` (opcjonalny, filtruje po title/author, case-insensitive, fragment w dowolnym miejscu)
 - 400: `ConstraintViolationException` przy niepoprawnych wartościach
 - Response: `PageResponse<BookResponse>` (content, page, pageSize, totalElements, totalPages)
 - Status: **zaimplementowane, przetestowane (Mockito: totalPages, edge case 0 elementów), zmergowane**
@@ -46,8 +46,10 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - Status: **skonfigurowane i zgodne z produkcją (HTTPS)** — naprawiony bug: pierwotny wpis miał `http://`, po migracji na HTTPS dawał 403 (Origin się nie zgadzał)
 
 ### Frontend — UI
-- `BookList`: lista + paginacja, delete inline, edit inline (`EditBookForm`)
-- `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól, obsługa 409
+- `BookList`: lista + paginacja, wyszukiwanie (pasek w `App`, dzielony przez `bookService.searchQuery`), delete inline z dwuetapowym potwierdzeniem, edit inline (`EditBookForm`)
+- `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól, obsługa 409 i ogólnych błędów 400 (`generalError`), domyślny status `FINISHED`/`timesRead=1`
+- Status wyświetlany jako kolorowa plakietka (`color-mix()` z istniejących zmiennych CSS), akcje edit/delete jako ikony SVG (`stroke=currentColor`, bez dodatkowej biblioteki)
+- Formularz dodawania zwijany (`App.showAddForm` signal), pasek wyszukiwania + przycisk "Dodaj" w jednym wierszu
 - Stan współdzielony przez `BookService` (signals)
 - Stylowanie: ciemny motyw "biblioteka"
 - `environment.ts`/`environment.prod.ts` — `apiUrl` przełączany przez `fileReplacements` w `angular.json` (dev: `http://localhost:8080`, prod: `/api`)
@@ -79,7 +81,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 
 ### Infrastruktura sieciowa i dostępowa
 - Publiczny IP: **141.147.39.244**, zamieniony z Ephemeral na **Reserved** (darmowe w Free Tier, nie zmieni się przy restarcie instancji)
-- Domena: **http://afterword.coffe.ink** (darmowa subdomena przez FreeDNS afraid.org, rekord A)
+- Domena: **https://afterword.coffe.ink** (darmowa subdomena przez FreeDNS afraid.org, rekord A)
 - Dostęp SSH do serwera: osobne klucze z desktopa i laptopa, oba dodane do `authorized_keys`
 - Dostęp do prywatnego repo GitHub z serwera: dedykowany **deploy key** (read-only), wygenerowany bezpośrednio na serwerze
 
@@ -138,5 +140,15 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [ ] Ujednolicić konwencję nazewnictwa metod serwis/repo (obecnie niespójne: część metod dodaje jawne "Book"/"Books" w serwisie, część nie)
 - [ ] Usuwanie: dodać stan "w trakcie" (sygnał `deletingId`, wyłączony przycisk "Tak, usuń" + tekst "Usuwanie...") i obsługę błędu przy nieudanym `deleteBook` (obecnie `onDelete` nie ma `error:` w subscribe — brak informacji dla usera przy niepowodzeniu)
 
+## Poprawki UI — zrobione ✅ (2026-08-07)
+- [x] Wyszukiwanie po tytule/autorze (backend: `search` param + frontend: pasek w `App`, live filtering, przycisk czyszczenia)
+- [x] Zwijany formularz dodawania (przycisk "+ Dodaj książkę" / "Zwiń formularz")
+- [x] Dwuetapowe potwierdzenie usuwania ("Usuń" → "Na pewno?" / "Tak, usuń" / "Anuluj")
+- [x] Status jako kolorowa plakietka (pill badge)
+- [x] Ikonki SVG zamiast tekstu na przyciskach Edytuj/Usuń
+- [x] Przy okazji: domyślny status nowej książki zmieniony na `FINISHED`/`timesRead=1`, dodana ogólna obsługa błędów 400 w `AddBookForm`
+- Wszystko wdrożone razem, jednym `docker compose up -d --build frontend` na serwerze, zweryfikowane na żywo
+
 ## Następny krok
-- [ ] Poprawki UI (kolejność): 4) wyszukiwarka + zwijany formularz dodawania, 1) potwierdzenie usuwania, 2) status jako kolorowa plakietka, 3) ikonki na przyciskach Edytuj/Usuń — wdrożenie razem, po kilku zmianach, nie po każdej osobno
+- [ ] Nowa funkcja z Backlog / Model Book, albo pozycja z Backlog / Techniczne (stan "w trakcie" przy usuwaniu, testy `searchBooks`, ujednolicenie konwencji nazw)
+
