@@ -4,7 +4,35 @@
 </header>
 
 <main class="app-main">
+<div class="toolbar">
+  <div class="search-input-wrapper">
+    <input
+      type="text"
+      placeholder="Szukaj po tytule lub autorze..."
+      [value]="bookService.searchQuery()"
+      (input)="onSearch($any($event.target).value)"
+    />
+    @if (bookService.searchQuery()) {
+      <button
+        type="button"
+        class="clear-search"
+        aria-label="Wyczyść wyszukiwanie"
+        (click)="clearSearch()"
+      >
+        ×
+      </button>
+    }
+  </div>
+  @if (showAddForm()) {
+    <button class="btn btn-ghost" (click)="toggleAddForm()">Zwiń formularz</button>
+  } @else {
+    <button class="btn btn-primary" (click)="toggleAddForm()">+ Dodaj książkę</button>
+  }
+</div>
+
+  @if (showAddForm()) {
   <app-add-book-form></app-add-book-form>
+  }
   <app-book-list></app-book-list>
 </main>
 

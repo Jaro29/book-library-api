@@ -3,14 +3,6 @@
     <h2>Lista książek</h2>
   </div>
 
-  <div class="search-bar">
-    <input
-      type="text"
-      placeholder="Szukaj po tytule lub autorze..."
-      (input)="onSearch($any($event.target).value)"
-    />
-  </div>
-
   <ul class="book-rows">
     @for (book of books(); track book.id) {
       <li class="book-row" [attr.data-status]="book.status">
