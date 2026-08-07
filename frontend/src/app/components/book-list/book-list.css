@@ -21,12 +21,25 @@
 .book-info { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
 .book-title { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
 .book-author { color: var(--color-parchment-muted); font-style: italic; }
-.book-status {
+.status-pill {
   font-family: var(--font-mono);
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  background: var(--color-cover-alt);
   color: var(--color-parchment-muted);
+}
+
+.status-pill[data-status='FINISHED'] {
+  background: color-mix(in srgb, var(--color-sage) 22%, var(--color-ink));
+  color: var(--color-sage);
+}
+
+.status-pill[data-status='READING'] {
+  background: color-mix(in srgb, var(--color-marigold) 22%, var(--color-ink));
+  color: var(--color-marigold);
 }
 
 .book-actions { display: flex; gap: 8px; flex-shrink: 0; }
