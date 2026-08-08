@@ -5,15 +5,17 @@ import { AddBookForm } from './components/add-book-form/add-book-form';
 import { BookService } from './services/book';
 import { AuthService } from './services/auth';
 import { LoginForm } from './components/login-form/login-form';
+import { RegisterForm } from './components/register-form/register-form';
 
 @Component({
   selector: 'app-root',
-  imports: [BookList, RouterOutlet, AddBookForm, LoginForm],
+  imports: [BookList, RouterOutlet, AddBookForm, LoginForm, RegisterForm],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
   showAddForm = signal(false);
+  showRegister = signal(false);
 
   protected bookService = inject(BookService);
   protected authService = inject(AuthService);
@@ -30,5 +32,13 @@ export class App {
 
   toggleAddForm() {
     this.showAddForm.update((value) => !value);
+  }
+
+  toggleAuthMode() {
+    this.showRegister.update((value) => !value);
+  }
+
+  onRegistered() {
+    this.showRegister.set(false);
   }
 }

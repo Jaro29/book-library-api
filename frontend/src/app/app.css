@@ -76,3 +76,13 @@
 .clear-search:hover {
   color: var(--color-parchment);
 }
+
+.app-header {
+  position: relative;
+}
+
+.logout-button {
+  position: absolute;
+  top: 24px;
+  right: 24px;
+}

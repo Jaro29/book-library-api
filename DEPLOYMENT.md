@@ -1,4 +1,4 @@
-# DEPLOYMENT.md — book-library-api
+# DEPLOYMENT.md - book-library-api
 
 ## Cel
 Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, jeden VM, Docker Compose.
@@ -20,32 +20,38 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 
 ### Frontend
 - [x] `frontend/Dockerfile` (multi-stage: `node:22-alpine` → `nginx:alpine`)
-- [x] `frontend/nginx.conf` — SPA fallback, reverse proxy `/api/` → `http://backend:8080/`
+- [x] `frontend/nginx.conf` - SPA fallback, reverse proxy `/api/` → `http://backend:8080/`
 - [x] Angular `environment.ts`/`environment.prod.ts`, `BookService` używa `environment.apiUrl`
 
 ### Pełny stos ✅
 - [x] `docker-compose.yml`: `mariadb` (wolumen `mariadb-data`), `backend`, `frontend`, `certbot`, `certbot-renew`
-- [x] `.env` lokalny i produkcyjny — osobne, wygenerowane hasła (`openssl rand -base64 24`), zapisane w KeePassXC
+- [x] `.env` lokalny i produkcyjny - osobne, wygenerowane hasła (`openssl rand -base64 24`), zapisane w KeePassXC; zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `APP_USERNAME`, `APP_PASSWORD`
 
 ### Wdrożenie na serwer ✅
 - [x] `git clone` przez deploy key
-- [x] `docker compose up -d --build` — wszystkie kontenery działają
+- [x] `docker compose up -d --build` - wszystkie kontenery działają
 - [x] Port 80 otwarty w Security List Oracle
 - [x] Naprawiony i wdrożony bug: normalizacja pustego ISBN (`''` → `null`)
 
 ### HTTPS ✅
 - [x] Serwis `certbot` w `docker-compose.yml`, wolumeny `certbot-etc`/`certbot-www` współdzielone z `frontend`
 - [x] `nginx.conf`: `location /.well-known/acme-challenge/` dodana **przed** wdrożeniem certyfikatu (Etap A)
-- [x] Certyfikat wygenerowany: `docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d afterword.coffe.ink --email ... --agree-tos --no-eff-email` — ważny do **2026-11-04**
+- [x] Certyfikat wygenerowany: `docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d afterword.coffe.ink --email ... --agree-tos --no-eff-email` - ważny do **2026-11-04**
 - [x] `nginx.conf` (Etap B): drugi `server` blok na porcie 443 z `ssl_certificate`/`ssl_certificate_key`; port 80 przekierowuje (`301`) na HTTPS, poza ścieżką ACME
 - [x] Port 443 otwarty w Security List Oracle (ten sam wzorzec co port 80)
-- [x] Serwis `certbot-renew` — pętla `certbot renew` co 12h (odnawia tylko, gdy zostało <30 dni do wygaśnięcia)
-- [x] CORS: `allowedOrigins` zaktualizowane z `http://` na **`https://afterword.coffe.ink`** — HTTPS zmienia `Origin`, więc stary wpis przestał pasować
+- [x] Serwis `certbot-renew` - pętla `certbot renew` co 12h (odnawia tylko, gdy zostało <30 dni do wygaśnięcia)
+- [x] CORS: `allowedOrigins` zaktualizowane z `http://` na **`https://afterword.coffe.ink`** - HTTPS zmienia `Origin`, więc stary wpis przestał pasować
+
+### Autoryzacja ✅
+- [x] Spring Security Basic Auth chroni wszystkie endpointy
+- [x] CORS przeniesiony do `SecurityConfig` (usunięty `WebConfig`)
+- [x] Frontend: `AuthService` + interceptor + `LoginForm`
+- [x] Naprawiony bug: `APP_USERNAME`/`APP_PASSWORD` brakowały w `docker-compose.yml` (backend używał domyślnych `admin`/`admin123`)
 
 ## Do zrobienia
 - [ ] `healthcheck` na MariaDB + `condition: service_healthy` w compose
 - [ ] Rozważyć budowanie lokalne + rejestr obrazów, jeśli budowanie na serwerze okaże się zbyt wolne
-- [ ] CI/CD: automatyczne wdrażanie przez GitHub Actions (trigger na push do `develop`, SSH do serwera przez sekret, `git pull` + `docker compose up -d --build`) — obecnie proces w pełni ręczny
+- [ ] CI/CD: automatyczne wdrażanie przez GitHub Actions (trigger na push do `develop`, SSH do serwera przez sekret, `git pull` + `docker compose up -d --build`) - obecnie proces w pełni ręczny
 
 ## Standardowa procedura aktualizacji zdeployowanej aplikacji
 
@@ -89,22 +95,24 @@ docker compose ps
 Test na żywo: `https://afterword.coffe.ink`
 
 ### Kluczowa zasada: dane przetrwają aktualizacje
-`mariadb-data` to nazwany wolumen — `docker compose up -d --build` nigdy go nie usuwa. Jedyny sposób utraty danych: `docker compose down -v` — **nigdy na serwerze produkcyjnym**.
+`mariadb-data` to nazwany wolumen - `docker compose up -d --build` nigdy go nie usuwa. Jedyny sposób utraty danych: `docker compose down -v` - **nigdy na serwerze produkcyjnym**.
 
 ## Decyzje podjęte po drodze
 - Budowanie obrazów: na serwerze (opcja A)
 - Klucz SSH osobny od GitHuba; osobny deploy key (read-only) do klonowania
 - Publiczny IP: Reserved (darmowe, limit 1/konto)
 - Domena: darmowa subdomena FreeDNS zamiast płatnej własnej domeny na start
-- HTTPS: Let's Encrypt/Certbot, metoda `webroot`, wdrożone w dwóch etapach (najpierw ścieżka weryfikacji, potem sam SSL) — bo Certbot potrzebuje działającego HTTP, zanim może wystawić certyfikat dla HTTPS
+- HTTPS: Let's Encrypt/Certbot, metoda `webroot`, wdrożone w dwóch etapach (najpierw ścieżka weryfikacji, potem sam SSL) - bo Certbot potrzebuje działającego HTTP, zanim może wystawić certyfikat dla HTTPS
 
 ## Notatki / rzeczy do pamiętania
 - `DevDataSeeder` działa tylko w profilu `dev`
 - `host.docker.internal` na natywnym Linuksie wymaga `--add-host=host.docker.internal:host-gateway` (dotyczy tylko ręcznych testów pojedynczych kontenerów)
 - `ufw` blokuje domyślnie ruch z kontenerów do hosta (dotyczy tylko scenariusza kontener→host, nie `docker-compose.yml`)
 - **Incydent `.env`:** przypadkiem scommitowany przez błąd w `.gitignore` (`echo >>` sklejony z poprzednią linią). Naprawione, `git status` warto sprawdzać uważnie po zmianie `.gitignore`
-- Konflikt portu 3306 przy testach lokalnych z systemową MariaDB — użyj innego portu hosta (`-p 3307:3306`)
-- Oracle "Out of capacity" dla Ampere A1 — częsty, nie błąd konfiguracji; ręczne ponawianie zwykle wystarcza
+- Konflikt portu 3306 przy testach lokalnych z systemową MariaDB - użyj innego portu hosta (`-p 3307:3306`)
+- Oracle "Out of capacity" dla Ampere A1 - częsty, nie błąd konfiguracji; ręczne ponawianie zwykle wystarcza
 - FreeDNS wymaga logowania kilka razy w roku, żeby subdomena nie wygasła
-- **Docker Compose `entrypoint` jako string vs lista:** zwykły string w `entrypoint` jest dzielony na "słowa" i pierwsze traktowane jako nazwa programu — polecenia powłoki (`trap`, `while`) trzeba jawnie owinąć: `["/bin/sh", "-c", "..."]`. W tej samej składni `$$!` (nie `$${!}`) daje poprawny, dosłowny `$!` wewnątrz kontenera
-- **CORS a HTTPS:** `allowedOrigins` porównuje **cały** origin, łącznie z protokołem — `http://` i `https://` to dwa różne originy. Po migracji na HTTPS trzeba zaktualizować `WebConfig`, inaczej wszystkie żądania z frontendu dostają 403 "Invalid CORS request"
+- **Docker Compose `entrypoint` jako string vs lista:** zwykły string w `entrypoint` jest dzielony na "słowa" i pierwsze traktowane jako nazwa programu - polecenia powłoki (`trap`, `while`) trzeba jawnie owinąć: `["/bin/sh", "-c", "..."]`. W tej samej składni `$$!` (nie `$${!}`) daje poprawny, dosłowny `$!` wewnątrz kontenera
+- **CORS a HTTPS:** `allowedOrigins` porównuje **cały** origin, łącznie z protokołem - `http://` i `https://` to dwa różne originy. Po migracji na HTTPS trzeba zaktualizować `WebConfig`, inaczej wszystkie żądania z frontendu dostają 403 "Invalid CORS request"
+- **Basic Auth w SPA wymaga własnej obsługi** - natywne okienko przeglądarki działa tylko przy nawigacji, nie przy AJAX - SPA musi ręcznie doklejać nagłówek `Authorization` (interceptor)
+- **Nowe zmienne env w `docker-compose.yml` trzeba jawnie dopisać w `environment:`** - samo dodanie do `.env` nie wystarczy, `.env` tylko dostarcza wartości dla `${...}` **już użytych** w compose

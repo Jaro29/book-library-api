@@ -1,7 +1,10 @@
-@if (authService.credentials()) {
+@if (authService.token()) {
 <header class="app-header">
   <p class="eyebrow">Katalog osobisty</p>
   <h1>Biblioteczka</h1>
+  <button class="btn btn-ghost logout-button" (click)="authService.logout()">
+    Wyloguj ({{ authService.displayName() }})
+  </button>
 </header>
 
 <main class="app-main">
@@ -37,6 +40,12 @@
   <app-book-list></app-book-list>
 </main>
 } @else {
-  <app-login-form></app-login-form>
+  @if (showRegister()) {
+    <app-register-form (registered)="onRegistered()"></app-register-form>
+    <button class="btn btn-ghost" (click)="toggleAuthMode()">Masz już konto? Zaloguj się</button>
+  } @else {
+    <app-login-form></app-login-form>
+    <button class="btn btn-ghost" (click)="toggleAuthMode()">Nie masz konta? Zarejestruj się</button>
+  }
 }
 <router-outlet></router-outlet>

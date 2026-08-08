@@ -5,7 +5,6 @@ import org.springframework.stereotype.Service;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
-import pl.jaro.restapiworkshop.exception.ApiException;
 import pl.jaro.restapiworkshop.exception.DuplicateBookException;
 import pl.jaro.restapiworkshop.exception.InvalidTimesReadException;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
@@ -26,26 +25,27 @@ public class BookServiceImpl implements BookService {
     private final BookSearchRepository bookSearchRepository;
 
     @Override
-    public Book createBook(BookCreateRequest createRequest, boolean allowDuplicate) {
-        boolean exists = bookRepository.existsByTitleAndAuthor(createRequest.title(), createRequest.author());
+    public Book createBook(BookCreateRequest createRequest, boolean allowDuplicate, Long userId) {
+        boolean exists = bookRepository.existsByTitleAndAuthor(createRequest.title(), createRequest.author(), userId);
         if (!allowDuplicate && exists) {
             throw new DuplicateBookException("Książka o tym tytule i autorze już istnieje.");
         }
 
         Book book = BookMapper.toBook(createRequest);
+        book.setUserId(userId);
         validateTimesRead(book);
         return bookRepository.create(book);
     }
 
     @Override
-    public Book findBookById(Long id) {
-        return bookRepository.findById(id);
+    public Book findBookById(Long id, Long userId) {
+        return bookRepository.findById(id, userId);
     }
 
     @Override
-    public PageResponse<Book> findAllBooks(int page, int pageSize) {
-        Collection<Book> books = bookRepository.findAll(page, pageSize);
-        int totalElements = bookRepository.countAll();
+    public PageResponse<Book> findAllBooks(int page, int pageSize, Long userId) {
+        Collection<Book> books = bookRepository.findAll(page, pageSize, userId);
+        int totalElements = bookRepository.countAll(userId);
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
@@ -53,11 +53,11 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public Book updateBook(Long id, BookPatchRequest patchRequest) {
-        Book existingBook = bookRepository.findById(id);
+    public Book updateBook(Long id, BookPatchRequest patchRequest, Long userId) {
+        Book existingBook = bookRepository.findById(id, userId);
         Book updatedBook = BookMapper.toBook(patchRequest, existingBook);
         validateTimesRead(updatedBook);
-        if (bookRepository.existsByTitleAndAuthorExcludingId(updatedBook.getTitle(), updatedBook.getAuthor(), id)) {
+        if (bookRepository.existsByTitleAndAuthorExcludingId(updatedBook.getTitle(), updatedBook.getAuthor(), id, userId)) {
             throw new DuplicateBookException("Inna książka o tym tytule i autorze już istnieje.");
         }
 
@@ -65,14 +65,14 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public void deleteBook(Long id) {
-        bookRepository.delete(id);
+    public void deleteBook(Long id, Long userId) {
+        bookRepository.delete(id, userId);
     }
 
     @Override
-    public PageResponse<Book> searchBooks(String search, int page, int pageSize) {
-        Collection<Book> books = bookSearchRepository.searchBooks(search, page, pageSize);
-        int totalElements = bookSearchRepository.countBySearch(search);
+    public PageResponse<Book> searchBooks(String search, int page, int pageSize, Long userId) {
+        Collection<Book> books = bookSearchRepository.searchBooks(search, page, pageSize, userId);
+        int totalElements = bookSearchRepository.countBySearch(search, userId);
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 

@@ -1,12 +1,12 @@
 <form (submit)="onSubmit($event)" class="login-form">
   <h2>Logowanie</h2>
   <div class="field">
-    <label for="login-username">Login</label>
+    <label for="login-email">Email</label>
     <input
-      id="login-username"
-      type="text"
-      [value]="username()"
-      (input)="username.set($any($event.target).value)"
+      id="login-email"
+      type="email"
+      [value]="email()"
+      (input)="email.set($any($event.target).value)"
     />
   </div>
   <div class="field">
@@ -18,5 +18,8 @@
       (input)="password.set($any($event.target).value)"
     />
   </div>
+  @if (error()) {
+    <span class="field-error">{{ error() }}</span>
+  }
   <button type="submit" class="btn btn-primary">Zaloguj</button>
 </form>

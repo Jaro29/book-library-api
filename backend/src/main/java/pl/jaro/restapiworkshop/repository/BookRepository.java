@@ -1,26 +1,25 @@
 package pl.jaro.restapiworkshop.repository;
 
 import pl.jaro.restapiworkshop.model.Book;
-import pl.jaro.restapiworkshop.model.BookStatus;
 
 import java.util.Collection;
 
 public interface BookRepository {
 
-    boolean existsByTitleAndAuthor(String title, String author);
+    boolean existsByTitleAndAuthor(String title, String author, Long userId);
 
-    boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id);
+    boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id, Long userId);
 
     Book create(Book book);
 
-    Collection<Book> findAll(int page, int pageSize);
+    Collection<Book> findAll(int page, int pageSize, Long userId);
 
-    Book findById(Long id);
+    Book findById(Long id, Long userId);
 
     Book update(Book book);
 
-    void delete(Long id);
+    void delete(Long id, Long userId);
 
-    int countAll();
+    int countAll(Long userId);
 
 }
