@@ -43,10 +43,15 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 - [x] CORS: `allowedOrigins` zaktualizowane z `http://` na **`https://afterword.coffe.ink`** - HTTPS zmienia `Origin`, więc stary wpis przestał pasować
 
 ### Autoryzacja ✅
-- [x] Spring Security Basic Auth chroni wszystkie endpointy
-- [x] CORS przeniesiony do `SecurityConfig` (usunięty `WebConfig`)
-- [x] Frontend: `AuthService` + interceptor + `LoginForm`
-- [x] Naprawiony bug: `APP_USERNAME`/`APP_PASSWORD` brakowały w `docker-compose.yml` (backend używał domyślnych `admin`/`admin123`)
+- [x] Spring Security + JWT (nie Basic Auth) - rejestracja, logowanie, per-user izolacja danych
+- [x] CORS w `SecurityConfig` (`CorsConfigurationSource` bean)
+- [x] Frontend: `AuthService`, `LoginForm`, `RegisterForm`, interceptor z `Bearer <token>`
+- [x] Produkcyjne dane (68 książek) bezpiecznie zmigrowane do modelu multi-user, zero strat
+
+## Lokalne środowisko deweloperskie
+- Zamiast H2 (in-memory), lokalny development używa **trwałej** MariaDB w Dockerze (`dev-mariadb`, port 3307) - eliminuje powtarzające się niekompatybilności H2/MariaDB przy migracjach (składnia `ALTER TABLE`, nazwy tabel systemowych, automatyczne nazewnictwo ograniczeń)
+- `application-dev.yml` wskazuje na tę bazę zamiast H2
+- Testy `@JdbcTest` też skonfigurowane na realną MariaDB przez `@AutoConfigureTestDatabase(replace = Replace.NONE)`, dla spójności z produkcją
 
 ## Do zrobienia
 - [ ] `healthcheck` na MariaDB + `condition: service_healthy` w compose
@@ -82,7 +87,8 @@ git pull
 ```
 
 ### 5. Przebuduj tylko to, co się zmieniło
-- Backend: `docker compose up -d --build backend`
+### 5. Przebuduj tylko to, co się zmieniło
+- Backend: `docker compose up -d --build backend`, **potem** `docker compose restart frontend` (nginx cache'uje adres IP backendu przy własnym starcie - bez restartu dostaniesz 502 Bad Gateway po każdej przebudowie samego backendu)
 - Frontend: `docker compose up -d --build frontend`
 - Zmiana w `docker-compose.yml` (nowy serwis, nowy port): pełne `docker compose up -d --build` (albo precyzyjnie: `docker compose up -d --build <nowe-serwisy>`, jeśli chcesz uniknąć dotykania niezmienionych)
 - Zmiana **tylko** w `docker-compose.yml` bez zmiany kodu: `docker compose up -d` (bez `--build`)
@@ -105,7 +111,7 @@ Test na żywo: `https://afterword.coffe.ink`
 - HTTPS: Let's Encrypt/Certbot, metoda `webroot`, wdrożone w dwóch etapach (najpierw ścieżka weryfikacji, potem sam SSL) - bo Certbot potrzebuje działającego HTTP, zanim może wystawić certyfikat dla HTTPS
 
 ## Notatki / rzeczy do pamiętania
-- `DevDataSeeder` działa tylko w profilu `dev`
+- `DevDataSeeder`/`data-dev.sql` **usunięte** (2026-08-08) - bez sensu w świecie multi-user (brak domyślnego właściciela); dane testowe dodaje się teraz przez zarejestrowanie konta i UI
 - `host.docker.internal` na natywnym Linuksie wymaga `--add-host=host.docker.internal:host-gateway` (dotyczy tylko ręcznych testów pojedynczych kontenerów)
 - `ufw` blokuje domyślnie ruch z kontenerów do hosta (dotyczy tylko scenariusza kontener→host, nie `docker-compose.yml`)
 - **Incydent `.env`:** przypadkiem scommitowany przez błąd w `.gitignore` (`echo >>` sklejony z poprzednią linią). Naprawione, `git status` warto sprawdzać uważnie po zmianie `.gitignore`
@@ -116,3 +122,5 @@ Test na żywo: `https://afterword.coffe.ink`
 - **CORS a HTTPS:** `allowedOrigins` porównuje **cały** origin, łącznie z protokołem - `http://` i `https://` to dwa różne originy. Po migracji na HTTPS trzeba zaktualizować `WebConfig`, inaczej wszystkie żądania z frontendu dostają 403 "Invalid CORS request"
 - **Basic Auth w SPA wymaga własnej obsługi** - natywne okienko przeglądarki działa tylko przy nawigacji, nie przy AJAX - SPA musi ręcznie doklejać nagłówek `Authorization` (interceptor)
 - **Nowe zmienne env w `docker-compose.yml` trzeba jawnie dopisać w `environment:`** - samo dodanie do `.env` nie wystarczy, `.env` tylko dostarcza wartości dla `${...}` **już użytych** w compose
+- **502 Bad Gateway po `docker compose up -d --build backend`** - nginx nie odświeża automatycznie adresu IP kontenera backendu. Zawsze `docker compose restart frontend` po samodzielnej przebudowie backendu
+- **Bezpieczne wdrażanie migracji NOT NULL na istniejące dane:** rozbij na dwa wdrożenia - (1) nullable kolumna + kod aplikacji, (2) backfill danych przez `UPDATE`, (3) osobna migracja `NOT NULL`, dopiero gdy backfill potwierdzony (np. `SELECT COUNT(*) vs COUNT(kolumna)`)

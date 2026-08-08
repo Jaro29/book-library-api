@@ -5,10 +5,23 @@ Backend: pełny CRUD + walidacja biznesowa + testy Mockito + Flyway ✅.
 Frontend: pełny CRUD z UI (Angular 22, Signal Forms) + stylowanie + environments (dev/prod) ✅.
 Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) ✅.
 **Deployment: KOMPLETNY - HTTPS, aplikacja żyje pod https://afterword.coffe.ink ✅**
+**Multi-user: KOMPLETNY - JWT, pełna izolacja danych per-user, wdrożone bezpiecznie na produkcji (68/68 książek zachowanych) ✅**
 
 ---
 
 ## Kontrakty endpointów (źródło prawdy dla API)
+
+### POST /register
+- Request: `RegisterRequest` (displayName, email, password min. 8 znaków)
+- 409: `EmailAlreadyExistsException`, gdy email zajęty
+- 201: `RegisterResponse` (id, displayName, email - bez hasła)
+- Status: **zaimplementowane, przetestowane, działa na produkcji**
+
+### POST /login
+- Request: `LoginRequest` (email, password)
+- 401: `InvalidCredentialsException` (ten sam komunikat dla "brak konta" i "złe hasło" - celowo, żeby nie zdradzać które adresy są zarejestrowane)
+- 200: `LoginResponse` (token, displayName)
+- Status: **zaimplementowane, przetestowane, działa na produkcji**
 
 ### POST /books
 - Request: `BookCreateRequest` (title, author, isbn, status, startDate, finishDate, timesRead, notes), query param `allowDuplicate` (bool, default false)
@@ -56,11 +69,12 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - `environment.ts`/`environment.prod.ts` - `apiUrl` przełączany przez `fileReplacements` w `angular.json` (dev: `http://localhost:8080`, prod: `/api`)
 - Status: **zaimplementowane, zmergowane, działa na produkcji**
 
-### Autoryzacja - Basic Auth
-- **Backend:** `SecurityConfig` (Spring Security), `@EnableWebSecurity` - wszystkie endpointy wymagają uwierzytelnienia (`anyRequest().authenticated()`), CSRF wyłączony (niepotrzebny przy bezstanowym Basic Auth), `SessionCreationPolicy.STATELESS`. Jeden użytkownik w `InMemoryUserDetailsManager`, dane logowania z `${APP_USERNAME}`/`${APP_PASSWORD}` (env), hasło hashowane przez `PasswordEncoderFactories.createDelegatingPasswordEncoder()`
-- **Frontend:** `AuthService` (sygnał `credentials`), funkcyjny `HttpInterceptorFn` (`authInterceptor`) doklejający nagłówek `Authorization: Basic <base64>` do każdego żądania, `LoginForm` komponent, `App` pokazuje login albo resztę aplikacji zależnie od `authService.credentials()`
-- **Ważne odkrycie po drodze:** natywne okienko logowania przeglądarki (Basic Auth) pojawia się **tylko** przy bezpośredniej nawigacji, **nie** przy żądaniach AJAX/fetch z JS - dlatego SPA **musi** samodzielnie zarządzać danymi logowania i doklejać nagłówek (stąd `AuthService`/interceptor, nie poleganie na przeglądarce)
-- Status: **zaimplementowane, przetestowane (GET/POST/DELETE z i bez danych logowania), zmergowane, działa na produkcji**
+### Autoryzacja - JWT + wielu użytkowników
+- **Backend:** `users` (id, display_name, email UNIQUE, password hashed), `books.user_id` (FK, NOT NULL od V5). `POST /register` (hashowanie przez `PasswordEncoder`), `POST /login` (zwraca JWT). `JwtService` (jjwt 0.13.0, HMAC, userId jako subject, ważność 24h), `JwtAuthFilter` (`OncePerRequestFilter`, czyta `Bearer <token>`, ustawia `SecurityContextHolder`). `SecurityConfig`: `httpBasic`/`InMemoryUserDetailsManager` usunięte, `addFilterBefore(jwtAuthFilter, ...)`, `/register`/`/login` `permitAll`, reszta `authenticated()`
+- **Izolacja danych:** `userId` wyciągany server-side przez `@AuthenticationPrincipal Long userId` (nigdy z ciała żądania) i wymagany w **każdej** metodzie `BookRepository`/`BookService`/`BookController`. `UPDATE`/`DELETE` filtrowane przez `id AND user_id` - próba modyfikacji cudzej książki po zgadniętym `id` zwraca 404, nie 403 (baza po prostu nie znajduje pasującego wiersza)
+- **ISBN unikalny per-user**, nie globalnie (`UNIQUE(user_id, isbn)`, migracja V4) - różni userzy mogą mieć tę samą książkę
+- **Frontend:** `AuthService` (HTTP-based `login`/`register`, `token`/`displayName` signals w `sessionStorage`), interceptor wysyła `Authorization: Bearer <token>`, `LoginForm` (email/hasło + obsługa błędu), `RegisterForm` (nowy, emituje `registered` po sukcesie), przycisk wylogowania w nagłówku
+- Status: **w pełni zaimplementowane, przetestowane end-to-end lokalnie i na produkcji**
 ---
 
 ## Docker / Infrastruktura
@@ -109,6 +123,10 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 **Bug:** `docker-compose.yml` nie przekazywał `APP_USERNAME`/`APP_PASSWORD` do kontenera `backend` - mimo ustawienia ich w `.env` na serwerze, Spring cicho używał wartości domyślnych z `application.yaml` (`admin`/`admin123`). Produkcja faktycznie działała na domyślnych danych logowania.
 **Fix:** dodanie `APP_USERNAME: ${APP_USERNAME}` / `APP_PASSWORD: ${APP_PASSWORD}` do sekcji `environment` serwisu `backend`, wdrożone (`docker compose up -d`, bez przebudowy - zmiana tylko w compose).
 
+## Incydent #5 - 502 Bad Gateway po selektywnym przebudowaniu backendu (naprawiony) ✅
+**Bug:** po `docker compose up -d --build backend`, nginx (`frontend`) nadal wskazywał na stary, nieistniejący już adres IP kontenera backendu (nginx cache'uje adres przy własnym starcie, nie odświeża go automatycznie) - `POST /api/login` i inne żądania kończyły się 502.
+**Fix:** `docker compose restart frontend` po każdym przebudowaniu **samego** backendu. Udokumentowane jako stały krok w procedurze wdrożenia.
+
 ---
 
 ## Backlog / Deployment - WSZYSTKO ZROBIONE ✅
@@ -126,7 +144,9 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [ ] Pamiętać o logowaniu na FreeDNS co kilka miesięcy (inaczej subdomena może wygasnąć)
 
 ## Backlog / Migracje bazy danych
-- [x] Flyway wdrożony, `V1__create_books_table.sql`, zweryfikowany na H2 i prawdziwej MariaDB
+- [x] Flyway wdrożony, `V1__create_books_table.sql`
+- [x] `V2__create_users_table.sql`, `V3__add_user_id_to_books.sql` (nullable na start), `V4__make_isbn_unique_per_user.sql`, `V5__make_user_id_not_null.sql` - wszystkie zweryfikowane na lokalnej i produkcyjnej MariaDB
+- [x] **Wzorzec bezpiecznego wdrożenia migracji łamiącej istniejące dane:** gdy nowa kolumna musi być `NOT NULL`, a stare wiersze nie mają wartości - migracja `NOT NULL` idzie **osobno, po** wdrożeniu nullable wersji i **ręcznym backfillu** danych (`UPDATE ... WHERE ... IS NULL`), nie razem z pierwszym wdrożeniem
 - [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
 
 ## Backlog / Model Book - planowane rozszerzenia
@@ -136,11 +156,13 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [ ] pages, duration
 - [ ] ownership (enum), source
 
-## Backlog / Wielu użytkowników (duża zmiana architektoniczna, na przyszłość)
-- [ ] Uwierzytelnianie - logowanie/rejestracja (Spring Security)
-- [ ] Decyzja podjęta: **jedna, wspólna baza**, nowa kolumna `user_id` na `books` (nowa migracja Flyway) - nie osobna baza per user (zbyt złożone jak na potrzeby tej aplikacji: dynamiczny routing datasource, migracje per-tenant)
-- [ ] Wszystkie metody repozytorium będą wymagały jawnego parametru `userId` (spójne z istniejącym stylem raw JDBC/named params)
-- [ ] To wymaga osobnego planowania (mini-spec, jak przy każdym endpoincie) - nie robić przy okazji mniejszych poprawek
+## Wielu użytkowników - zrobione ✅ (2026-08-08)
+- [x] Uwierzytelnianie JWT (rejestracja + logowanie)
+- [x] Jedna wspólna baza, `user_id` na `books`, `NOT NULL` po backfillu
+- [x] Pełna izolacja - wszystkie metody repo/serwis/kontroler wymagają `userId`
+- [x] Frontend: RegisterForm, przepisany LoginForm/AuthService/interceptor na JWT, wylogowanie
+- [x] Lokalny dev przeniesiony z H2 na trwałą, lokalną MariaDB (Docker, `dev-mariadb`) - koniec niekompatybilności H2/MariaDB przy migracjach; `DevDataSeeder`/`data-dev.sql` usunięte (bez sensu bez domyślnego właściciela w świecie multi-user)
+- [x] Bezpieczne, dwuetapowe wdrożenie na produkcję - 68/68 istniejących książek przypisanych do konta bez utraty danych
 
 ## Backlog / Techniczne
 - [ ] `IsbnValidatorTest` - przepisać na Mockito, jeśli dodane zostaną dynamiczne komunikaty błędów
@@ -160,5 +182,5 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - Wszystko wdrożone razem, jednym `docker compose up -d --build frontend` na serwerze, zweryfikowane na żywo
 
 ## Następny krok
-- [ ] Nowa funkcja z Backlog / Model Book, albo pozycja z Backlog / Techniczne (stan "w trakcie" przy usuwaniu, testy `searchBooks`, ujednolicenie konwencji nazw)
+- [ ] Nowa funkcja z Backlog / Model Book, albo pozycja z Backlog / Techniczne
 

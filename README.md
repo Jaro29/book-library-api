@@ -10,7 +10,8 @@ Osobisty katalog książek - aplikacja do śledzenia przeczytanych, czytanych i 
 |---|---|
 | Backend | Spring Boot 4.1, Java 25, raw JDBC (`NamedParameterJdbcTemplate`, celowo bez JPA) |
 | Migracje bazy | Flyway |
-| Baza danych | MariaDB (prod), H2 in-memory (dev) |
+| Baza danych | MariaDB (prod i dev - lokalna, trwała instancja przez Docker, patrz "Uruchomienie lokalnie") |
+| Autoryzacja | JWT (jjwt), Spring Security - rejestracja, logowanie, izolacja danych per-user |
 | Frontend | Angular 22, standalone components, Signal Forms, sygnały jako mechanizm stanu |
 | Szyfrowanie | HTTPS przez Let's Encrypt/Certbot (automatyczne odnawianie) |
 | Serwer statyczny / reverse proxy | nginx |
@@ -46,6 +47,19 @@ Controller → Service → Repository → baza danych
 
 Rozdzielenie to nie jest formalność - każda warstwa da się przetestować i zmienić niezależnie od pozostałych (stąd `BookServiceImplTest` mockuje repozytorium, nie dotyka bazy).
 
+## Autoryzacja i izolacja danych
+
+Każdy zasób (`Book`) należy do konkretnego użytkownika przez kolumnę `user_id` (FK, `NOT NULL`). Przepływ:
+
+1. `POST /register` / `POST /login` - jedyne publiczne endpointy (`permitAll`)
+2. `POST /login` zwraca JWT (podpisany HMAC, `userId` jako subject, ważny 24h)
+3. Frontend dokleja token do każdego żądania (`Authorization: Bearer <token>`)
+4. `JwtAuthFilter` weryfikuje token i zapisuje `userId` w `SecurityContextHolder`
+5. Kontroler odbiera `userId` przez `@AuthenticationPrincipal Long userId` - **nigdy** z ciała żądania (klient nie może podać cudzego `userId`)
+6. Każda metoda repozytorium wymaga jawnego `userId`; `UPDATE`/`DELETE` filtrują `WHERE id = :id AND user_id = :userId` - próba modyfikacji cudzej książki po zgadniętym `id` zwraca 404 (baza po prostu nie znajduje pasującego wiersza)
+
+ISBN jest unikalny **per-user** (`UNIQUE(user_id, isbn)`), nie globalnie - różni userzy mogą mieć tę samą książkę.
+
 ## Troubleshooting - nietypowe problemy napotkane po drodze
 
 Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
@@ -59,6 +73,9 @@ Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
 - **`.gitignore` i `echo >> `** - dopisywanie linii do `.gitignore` przez `echo "wzorzec" >> .gitignore` może **skleić się** z poprzednią linią, jeśli plik nie kończył się znakiem nowej linii, tworząc jeden błędny, złożony wzorzec zamiast dwóch osobnych. Zawsze weryfikuj `cat .gitignore` po takiej zmianie, nie tylko `git status`.
 - **Docker Compose `entrypoint` string vs lista** - polecenia powłoki (`trap`, `while`) w `entrypoint` trzeba owinąć jawnie: `["/bin/sh", "-c", "..."]`, inaczej Docker próbuje uruchomić pierwsze słowo jako osobny program
 - **CORS `allowedOrigins` porównuje cały origin, razem z protokołem** - `http://` i `https://` to różne originy dla przeglądarki; po migracji na HTTPS trzeba zaktualizować backend, inaczej 403 na każdym żądaniu
+- **H2 vs MariaDB: różne nazwy ograniczeń/tabel systemowych** - H2 automatycznie nazywa proste ograniczenia `UNIQUE` losowo (np. `CONSTRAINT_3C`), MariaDB nazywa je po nazwie kolumny (np. `isbn`); tabela `INFORMATION_SCHEMA.CONSTRAINTS` w starszym H2 nazywa się `TABLE_CONSTRAINTS` w nowszym/ANSI. Po kilku takich niespodziankach - lokalny dev i testy przeniesione na prawdziwą, trwałą MariaDB
+- **502 Bad Gateway po `docker compose up -d --build backend`** - nginx cache'uje adres IP kontenera backendu przy własnym starcie i nie odświeża go automatycznie po przebudowie backendu. Zawsze `docker compose restart frontend` po samodzielnej przebudowie backendu
+- **Spring Boot 4.x zmienił pakiety klas testowych** - np. `@JdbcTest`/`@AutoConfigureTestDatabase` są teraz w `org.springframework.boot.jdbc.test.autoconfigure` (kolejność `jdbc`/`test.autoconfigure` odwrócona względem Spring Boot 2.x/3.x)
 
 ## Obsługa błędów
 
@@ -70,6 +87,8 @@ Trzy osobne wyjątki domenowe, bez znajomości HTTP - `GlobalExceptionHandler` (
 | `DuplicateBookException` | 409 | Ta sama para title+author już istnieje (przy POST bez `allowDuplicate=true`, lub przy PATCH gdy inna książka ma taki sam title+author) |
 | `InvalidTimesReadException` | 400 | `timesRead` ujemne, lub `status=FINISHED` z `timesRead<=0` |
 | `ConstraintViolationException` | 400 | `page`/`pageSize` poza dozwolonym zakresem |
+| `EmailAlreadyExistsException` | 409 | Email już zarejestrowany |
+| `InvalidCredentialsException` | 401 | Błędny email lub hasło (celowo ten sam komunikat dla obu przypadków) |
 | Walidacja `@Valid`/`@NotBlank`/`ValidIsbn` | 400 | Nieprawidłowy kształt danych w body żądania |
 | `ApiException` | 500 | Nieoczekiwana awaria infrastruktury (baza padła, itp.) - **jedyny** przypadek 500 w tym API |
 
@@ -81,6 +100,8 @@ Bazowy URL: `/` (dev: `http://localhost:8080`, prod: przez nginx `/api`)
 
 | Metoda | Ścieżka | Opis |
 |---|---|---|
+| `POST` | `/register` | Rejestracja (displayName, email, hasło min. 8 znaków) |
+| `POST` | `/login` | Logowanie, zwraca JWT |
 | `POST` | `/books?allowDuplicate=false` | Tworzy książkę. 409 przy duplikacie, chyba że `allowDuplicate=true` |
 | `GET` | `/books/{id}` | Pobiera jedną książkę |
 | `GET` | `/books?page=0&pageSize=20` | Lista paginowana |
@@ -102,6 +123,16 @@ Tabela `books` (schemat: `backend/src/main/resources/db/migration/V1__create_boo
 | `start_date`, `finish_date` | `DATE` | Oba opcjonalne, niezależnie od statusu |
 | `times_read` | `INT NOT NULL DEFAULT 0` | Liczba przeczytań |
 | `notes` | `TEXT` | Opcjonalne |
+| `user_id` | `BIGINT NOT NULL` | FK do `users.id` |
+
+Tabela `users`:
+
+| Kolumna | Typ | Uwagi |
+|---|---|---|
+| `id` | `BIGINT AUTO_INCREMENT` | Klucz główny |
+| `display_name` | `VARCHAR(50) NOT NULL` | Nazwa wyświetlana, bez ograniczenia unikalności |
+| `email` | `VARCHAR(255) NOT NULL UNIQUE` | Identyfikator logowania |
+| `password` | `VARCHAR(255) NOT NULL` | Hashowane (`PasswordEncoder`), nigdy jawnym tekstem |
 
 **Reguły biznesowe (w `BookServiceImpl`, nie w bazie):**
 - Duplikat = ten sam `title`+`author`, case-insensitive. Sprawdzany przy `POST` (pomijalny przez `allowDuplicate=true`) i `PATCH` (z pominięciem własnego `id`)
@@ -118,9 +149,20 @@ Tabela `books` (schemat: `backend/src/main/resources/db/migration/V1__create_boo
 
 ## Uruchomienie lokalnie
 
-### Opcja A - bez Dockera (rozwój dnia codziennego)
+### Opcja A - z bazą w kontenerze (rozwój dnia codziennego)
 
-Backend (profil dev, H2 in-memory, dane testowe przez `DevDataSeeder`):
+Wymaga lokalnej, trwałej MariaDB (nie H2 - zrezygnowano z niego przez powtarzające się niekompatybilności składni SQL między silnikami):
+```bash
+docker run --name dev-mariadb \
+  -e MARIADB_ROOT_PASSWORD=devroot \
+  -e MARIADB_DATABASE=bookdb \
+  -e MARIADB_USER=bookuser \
+  -e MARIADB_PASSWORD=devpass \
+  -p 3307:3306 \
+  -d mariadb:11
+```
+
+Backend (profil dev, wskazuje na powyższy kontener):
 ```bash
 cd backend
 ./mvnw spring-boot:run
@@ -151,8 +193,7 @@ Aplikacja dostępna pod `http://localhost` (port 80), backend i baza osiągalne 
 | `DB_NAME` | Nazwa bazy danych (np. `bookdb`) |
 | `DB_USERNAME` | Użytkownik aplikacji do bazy |
 | `DB_PASSWORD` | Hasło użytkownika aplikacji |
-| `APP_USERNAME` | Login do Basic Auth (jeden użytkownik, chroni całe API) |
-| `APP_PASSWORD` | Hasło do Basic Auth |
+| `JWT_SECRET` | Tajny klucz do podpisywania tokenów (min. 256 bit) |
 
 `.env` jest w `.gitignore` - nigdy nie commitować prawdziwych haseł.
 
@@ -164,6 +205,8 @@ cd backend
 ```
 
 Obejmuje: testy repozytorium na prawdziwym H2 (`@JdbcTest`), testy jednostkowe repozytorium z zamockowanym `NamedParameterJdbcTemplate`, testy serwisu z zamockowanym repozytorium (Mockito - duplikaty, `timesRead`, paginacja), testy walidatora ISBN.
+
+`BookRepositoryImplTest` (`@JdbcTest`) uruchamia się na **prawdziwej, lokalnej** MariaDB (`@AutoConfigureTestDatabase(replace = Replace.NONE)`), nie na domyślnej wbudowanej H2 - dla spójności z produkcją i uniknięcia niekompatybilności migracji między silnikami.
 
 ## Znane ograniczenia / dalszy rozwój
 
