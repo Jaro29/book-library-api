@@ -10,11 +10,21 @@ import { AuthService } from '../../services/auth';
 export class LoginForm {
   private authService = inject(AuthService);
 
-  username = signal('');
+  email = signal('');
   password = signal('');
+  error = signal<string | null>(null);
 
   protected onSubmit(event: Event) {
     event.preventDefault();
-    this.authService.login(this.username(), this.password());
+    this.error.set(null);
+
+    this.authService.login(this.email(), this.password()).subscribe({
+      next: (response) => {
+        this.authService.setSession(response.token, response.displayName);
+      },
+      error: () => {
+        this.error.set('Nieprawidłowy email lub hasło.');
+      },
+    });
   }
 }

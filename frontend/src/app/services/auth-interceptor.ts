@@ -4,12 +4,11 @@ import { AuthService } from './auth';
 
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const authService = inject(AuthService);
-  const credentials = authService.credentials();
+  const credentials = authService.token();
 
   if (credentials) {
-    const encoded = btoa(`${credentials.username}:${credentials.password}`);
     const authReq = req.clone({
-      setHeaders: { Authorization: `Basic ${encoded}` },
+      setHeaders: { Authorization: `Bearer ${credentials}` },
     });
     return next(authReq);
   }
