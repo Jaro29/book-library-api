@@ -1,0 +1,20 @@
+package pl.jaro.restapiworkshop.model;
+
+import lombok.*;
+
+@Getter
+@Setter
+@ToString
+@EqualsAndHashCode(of = "id")
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class User {
+
+    private Long id;
+
+    private String displayName;
+    private String password;
+    private String email;
+
+}

@@ -5,7 +5,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.dao.EmptyResultDataAccessException;
 import pl.jaro.restapiworkshop.dto.BookCreateRequest;
 import pl.jaro.restapiworkshop.dto.BookPatchRequest;
 import pl.jaro.restapiworkshop.dto.PageResponse;
@@ -15,19 +14,18 @@ import pl.jaro.restapiworkshop.exception.InvalidTimesReadException;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
-import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static pl.jaro.restapiworkshop.query.BookQuery.SELECT_BOOK_BY_ID_QUERY;
 
 @ExtendWith(MockitoExtension.class)
 class BookServiceImplTest {
+
+    private static final Long USER_ID = 1L;
 
     @Mock
     private BookRepository bookRepository;
@@ -37,41 +35,36 @@ class BookServiceImplTest {
 
     @Test
     void shouldThrowWhenDuplicateAndNotAllowed() {
-        // Arrange
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
                 null, null, null, null, null
         );
 
-        when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus"))
+        when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus", USER_ID))
                 .thenReturn(true);
 
-        // Act + Assert
         assertThrows(DuplicateBookException.class,
-                () -> bookService.createBook(request, false));
+                () -> bookService.createBook(request, false, USER_ID));
 
         verify(bookRepository, never()).create(any());
     }
 
     @Test
     void shouldCreateBookWhenDuplicateAllowed() {
-        // Arrange
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
                 null, null, null, null, null
         );
 
-        when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus"))
+        when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus", USER_ID))
                 .thenReturn(true);
 
         when(bookRepository.create(any())).thenReturn(
                 Book.builder().id(1L).title("Lalka").author("Bolesław Prus").build()
         );
 
-        // Act
-        Book result = bookService.createBook(request, true);
+        Book result = bookService.createBook(request, true, USER_ID);
 
-        // Assert
         assertEquals(1L, result.getId());
         assertEquals("Lalka", result.getTitle());
         assertEquals("Bolesław Prus", result.getAuthor());
@@ -81,56 +74,37 @@ class BookServiceImplTest {
 
     @Test
     void shouldRejectBookWhenTimesReadIsNegative() {
-
-        // Arrange
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
                 null, null, null, -1, null
         );
 
-        when(bookRepository.existsByTitleAndAuthor(
-                "Lalka",
-                "Bolesław Prus"
-        )).thenReturn(false);
+        when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus", USER_ID))
+                .thenReturn(false);
 
-        // Act + Assert
         assertThrows(
                 InvalidTimesReadException.class,
-                () -> bookService.createBook(request, false)
+                () -> bookService.createBook(request, false, USER_ID)
         );
         verify(bookRepository, never()).create(any());
     }
 
     @Test
     void shouldRejectBookWhenFinishedAndTimesReadIsZero() {
-
-        // Arrange
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
                 BookStatus.FINISHED, null, null, 0, null
         );
 
-        /*
-        Można pominąć, bo Mockito domyślnie zwraca "puste" wartości (false, 0, null, pusta kolekcja) dla niewywołanych when()
-
-        when(bookRepository.existsByTitleAndAuthor(
-                "Lalka",
-                "Bolesław Prus"
-        )).thenReturn(false);
-        */
-
-        // Act + Assert
         assertThrows(
                 InvalidTimesReadException.class,
-                () -> bookService.createBook(request, false)
+                () -> bookService.createBook(request, false, USER_ID)
         );
         verify(bookRepository, never()).create(any());
     }
 
     @Test
     void shouldRejectUpdateWhenAnotherBookWithSameTitleAndAuthorExists() {
-
-        // Arrange
         Long bookId = 1L;
 
         Book existingBook = Book.builder()
@@ -142,29 +116,20 @@ class BookServiceImplTest {
                 .build();
 
         BookPatchRequest patchRequest = new BookPatchRequest(
-                "Lalka",
-                "Bolesław Prus",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null
+                "Lalka", "Bolesław Prus", null,
+                null, null, null, null, null
         );
 
-        when(bookRepository.findById(bookId))
+        when(bookRepository.findById(bookId, USER_ID))
                 .thenReturn(existingBook);
 
         when(bookRepository.existsByTitleAndAuthorExcludingId(
-                "Lalka",
-                "Bolesław Prus",
-                bookId
+                "Lalka", "Bolesław Prus", bookId, USER_ID
         )).thenReturn(true);
 
-        // Act + Assert
         assertThrows(
                 DuplicateBookException.class,
-                () -> bookService.updateBook(bookId, patchRequest)
+                () -> bookService.updateBook(bookId, patchRequest, USER_ID)
         );
 
         verify(bookRepository, never()).update(any());
@@ -172,54 +137,46 @@ class BookServiceImplTest {
 
     @Test
     void shouldRejectUpdateWhenBookDoesNotExist() {
-
-        // Arrange
         Long bookId = 1L;
 
-        when(bookRepository.findById(bookId)).thenThrow(new BookNotFoundException("Nie znaleziono książki id: " + bookId));
+        when(bookRepository.findById(bookId, USER_ID))
+                .thenThrow(new BookNotFoundException("Nie znaleziono książki id: " + bookId));
 
         BookPatchRequest request = new BookPatchRequest(
                 "Lalka", "Bolesław Prus", null,
                 null, null, null, null, null
         );
 
-        // Act + Assert
         assertThrows(BookNotFoundException.class,
-                () -> bookService.updateBook(bookId, request));
+                () -> bookService.updateBook(bookId, request, USER_ID));
 
         verify(bookRepository, never()).update(any());
     }
 
     @Test
     void shouldCalculateTotalPagesWhenNotEvenlyDivisible() {
-        // Arrange
         int page = 0;
         int pageSize = 10;
 
-        when(bookRepository.findAll(page, pageSize)).thenReturn(List.of());
-        when(bookRepository.countAll()).thenReturn(21);
+        when(bookRepository.findAll(page, pageSize, USER_ID)).thenReturn(List.of());
+        when(bookRepository.countAll(USER_ID)).thenReturn(21);
 
-        // Act
-        PageResponse<Book> result = bookService.findAllBooks(page, pageSize);
+        PageResponse<Book> result = bookService.findAllBooks(page, pageSize, USER_ID);
 
-        // Assert
         assertEquals(3, result.totalPages());
         assertEquals(21, result.totalElements());
     }
 
     @Test
     void shouldReturnZeroTotalPagesWhenNoElements() {
-        // Arrange
         int page = 0;
         int pageSize = 20;
 
-        when(bookRepository.findAll(page, pageSize)).thenReturn(List.of());
-        when(bookRepository.countAll()).thenReturn(0);
+        when(bookRepository.findAll(page, pageSize, USER_ID)).thenReturn(List.of());
+        when(bookRepository.countAll(USER_ID)).thenReturn(0);
 
-        // Act
-        PageResponse<Book> result = bookService.findAllBooks(page, pageSize);
+        PageResponse<Book> result = bookService.findAllBooks(page, pageSize, USER_ID);
 
-        // Assert
         assertEquals(0, result.totalPages());
         assertEquals(0, result.totalElements());
     }

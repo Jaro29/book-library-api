@@ -24,6 +24,8 @@ import static pl.jaro.restapiworkshop.query.BookQuery.SELECT_BOOK_BY_ID_QUERY;
 @ExtendWith(MockitoExtension.class)
 public class BookRepositoryImplUnitTest {
 
+    private static final Long USER_ID = 1L;
+
     @Mock
     private NamedParameterJdbcTemplate jdbc;
 
@@ -36,46 +38,38 @@ public class BookRepositoryImplUnitTest {
 
     @Test
     void shouldThrowBookNotFoundExceptionWhenBookDoesNotExist() {
-
-        // Arrange
         Long id = 1L;
 
         when(jdbc.queryForObject(
                 eq(SELECT_BOOK_BY_ID_QUERY),
-                eq(Map.of("id", id)),
+                eq(Map.of("id", id, "userId", USER_ID)),
                 any(BookRowMapper.class)
         )).thenThrow(new EmptyResultDataAccessException(1));
 
-        // Act + Assert
         assertThrows(
                 BookNotFoundException.class,
-                () -> bookRepository.findById(id)
+                () -> bookRepository.findById(id, USER_ID)
         );
     }
 
     @Test
     void shouldThrowApiExceptionWhenDatabaseErrorOccurs() {
-
-        // Arrange
         Long id = 1L;
 
         when(jdbc.queryForObject(
                 eq(SELECT_BOOK_BY_ID_QUERY),
-                eq(Map.of("id", id)),
+                eq(Map.of("id", id, "userId", USER_ID)),
                 any(BookRowMapper.class)
         )).thenThrow(new RuntimeException("Database connection error"));
 
-        // Act + Assert
         assertThrows(
                 ApiException.class,
-                () -> bookRepository.findById(id)
+                () -> bookRepository.findById(id, USER_ID)
         );
     }
 
     @Test
     void shouldReturnBookWhenFound() {
-
-        // Arrange
         Long id = 1L;
 
         Book book = new Book();
@@ -85,16 +79,12 @@ public class BookRepositoryImplUnitTest {
 
         when(jdbc.queryForObject(
                 eq(SELECT_BOOK_BY_ID_QUERY),
-                eq(Map.of("id", id)),
+                eq(Map.of("id", id, "userId", USER_ID)),
                 any(BookRowMapper.class)
         )).thenReturn(book);
 
+        Book result = bookRepository.findById(id, USER_ID);
 
-        // Act
-        Book result = bookRepository.findById(id);
-
-
-        // Assert
         assertThat(result).isNotNull();
         assertThat(result.getId()).isEqualTo(id);
         assertThat(result.getTitle()).isEqualTo("Lalka");

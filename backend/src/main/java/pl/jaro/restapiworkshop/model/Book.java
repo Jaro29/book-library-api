@@ -1,7 +1,6 @@
 package pl.jaro.restapiworkshop.model;
 
 import lombok.*;
-import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
@@ -26,5 +25,7 @@ public class Book {
 
     private int timesRead;
     private String notes;
+
+    private Long userId;
 
 }

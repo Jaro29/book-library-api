@@ -12,14 +12,11 @@ import org.springframework.stereotype.Repository;
 import pl.jaro.restapiworkshop.exception.ApiException;
 import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.model.Book;
-import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
 import pl.jaro.restapiworkshop.repository.BookSearchRepository;
 import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
 
 import java.util.Collection;
-import java.util.List;
-import java.util.Map;
 import java.util.function.Supplier;
 
 import static java.util.Map.of;
@@ -36,41 +33,20 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     @Override
     public Book create(Book book) {
         return execute(() -> {
-                    KeyHolder holder = new GeneratedKeyHolder();
-                    SqlParameterSource parameters = getBookParameters(book);
-                    jdbc.update(INSERT_BOOK_QUERY, parameters, holder, new String[]{"id"});
-                    book.setId(requireNonNull(holder.getKey()).longValue());
-                    return book;
-                }
-        );
+            KeyHolder holder = new GeneratedKeyHolder();
+            SqlParameterSource parameters = getBookParameters(book);
+            jdbc.update(INSERT_BOOK_QUERY, parameters, holder, new String[]{"id"});
+            book.setId(requireNonNull(holder.getKey()).longValue());
+            return book;
+        });
     }
 
     @Override
-    public boolean existsByTitleAndAuthor(String title, String author) {
-        return execute(() -> {
-                    Integer count = jdbc.queryForObject(
-                            COUNT_BOOK_TITLE_AUTHOR_QUERY,
-                            of(
-                                    "title", title.trim().toLowerCase(),
-                                    "author", author.trim().toLowerCase()
-                            ),
-                            Integer.class
-                    );
-                    return count != null && count > 0;
-                }
-        );
-    }
-
-    @Override
-    public boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id) {
+    public boolean existsByTitleAndAuthor(String title, String author, Long userId) {
         return execute(() -> {
             Integer count = jdbc.queryForObject(
-                    COUNT_BOOK_TITLE_AUTHOR_EXCLUDING_ID_QUERY,
-                    of(
-                            "title", title.trim().toLowerCase(),
-                            "author", author.trim().toLowerCase(),
-                            "id", id
-                    ),
+                    COUNT_BOOK_TITLE_AUTHOR_QUERY,
+                    of("title", title.trim().toLowerCase(), "author", author.trim().toLowerCase(), "userId", userId),
                     Integer.class
             );
             return count != null && count > 0;
@@ -78,24 +54,36 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public Collection<Book> findAll(int page, int pageSize) {
-        return execute(() -> jdbc.query(SELECT_ALL_BOOKS_QUERY,
-                getPaginationParameters(page, pageSize), new BookRowMapper()));
+    public boolean existsByTitleAndAuthorExcludingId(String title, String author, Long id, Long userId) {
+        return execute(() -> {
+            Integer count = jdbc.queryForObject(
+                    COUNT_BOOK_TITLE_AUTHOR_EXCLUDING_ID_QUERY,
+                    of("title", title.trim().toLowerCase(), "author", author.trim().toLowerCase(), "id", id, "userId", userId),
+                    Integer.class
+            );
+            return count != null && count > 0;
+        });
     }
 
     @Override
-    public int countAll() {
+    public Collection<Book> findAll(int page, int pageSize, Long userId) {
+        return execute(() -> jdbc.query(SELECT_ALL_BOOKS_QUERY,
+                getPaginationParameters(page, pageSize).addValue("userId", userId), new BookRowMapper()));
+    }
+
+    @Override
+    public int countAll(Long userId) {
         return execute(() -> {
-            Integer count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, Map.of(), Integer.class);
+            Integer count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, of("userId", userId), Integer.class);
             return count != null ? count : 0;
         });
     }
 
     @Override
-    public Book findById(Long id) {
+    public Book findById(Long id, Long userId) {
         return execute(() -> {
             try {
-                return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id), new BookRowMapper());
+                return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id, "userId", userId), new BookRowMapper());
             } catch (EmptyResultDataAccessException exception) {
                 throw new BookNotFoundException("Nie znaleziono książki id: " + id);
             }
@@ -106,21 +94,18 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     public Book update(Book book) {
         return execute(() -> {
             SqlParameterSource parameters = getBookParameters(book);
-
             int updatedRows = jdbc.update(UPDATE_BOOK_QUERY, parameters);
-
             if (updatedRows == 0) {
                 throw new BookNotFoundException("Nie znaleziono książki id: " + book.getId());
             }
-
             return book;
         });
     }
 
     @Override
-    public void delete(Long id) {
+    public void delete(Long id, Long userId) {
         execute(() -> {
-            int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id));
+            int deletedRows = jdbc.update(DELETE_BOOK_QUERY, of("id", id, "userId", userId));
             if (deletedRows == 0) {
                 throw new BookNotFoundException("Nie znaleziono książki id: " + id);
             }
@@ -129,58 +114,22 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public Book getBookByIsbn(String isbn) {
-        return execute(() -> {
-            try {
-                return jdbc.queryForObject(SELECT_BOOK_BY_ISBN_QUERY, of("isbn", isbn), new BookRowMapper());
-            } catch (EmptyResultDataAccessException exception) {
-                throw new BookNotFoundException("Nie znaleziono książki o isbn: " + isbn);
-            }
-        });
-    }
-
-    @Override
-    public Collection<Book> getBooksByTitle(String title, int page, int pageSize) {
-        return execute(() -> {
-            SqlParameterSource params = getPaginationParameters(page, pageSize)
-                    .addValue("title", title.trim().toLowerCase());
-            return jdbc.query(SELECT_BOOKS_BY_TITLE_QUERY, params, new BookRowMapper());
-        });
-    }
-
-    @Override
-    public Collection<Book> getBooksByAuthor(String author, int page, int pageSize) {
-        return execute(() -> {
-            SqlParameterSource params = getPaginationParameters(page, pageSize)
-                    .addValue("author", author.trim().toLowerCase());
-            return jdbc.query(SELECT_BOOKS_BY_AUTHOR_QUERY, params, new BookRowMapper());
-        });
-    }
-
-    @Override
-    public Collection<Book> getBooksByStatus(BookStatus status, int page, int pageSize) {
-        return execute(() -> {
-            SqlParameterSource params = getPaginationParameters(page, pageSize)
-                    .addValue("status", status.name());
-            return jdbc.query(SELECT_BOOKS_BY_STATUS_QUERY, params, new BookRowMapper());
-        });
-    }
-
-    @Override
-    public Collection<Book> searchBooks(String search, int page, int pageSize) {
+    public Collection<Book> searchBooks(String search, int page, int pageSize, Long userId) {
         return execute(() -> {
             String searchParam = String.format("%%%s%%", search.trim().toLowerCase());
             SqlParameterSource params = getPaginationParameters(page, pageSize)
-                    .addValue("search", searchParam);
+                    .addValue("search", searchParam)
+                    .addValue("userId", userId);
             return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY, params, new BookRowMapper());
         });
     }
 
     @Override
-    public int countBySearch(String search) {
+    public int countBySearch(String search, Long userId) {
         return execute(() -> {
             String searchParam = String.format("%%%s%%", search.trim().toLowerCase());
-            Integer count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY, of("search", searchParam), Integer.class);
+            Integer count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY,
+                    of("search", searchParam, "userId", userId), Integer.class);
             return count != null ? count : 0;
         });
     }
@@ -205,7 +154,8 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
                 .addValue("startDate", book.getStartDate())
                 .addValue("finishDate", book.getFinishDate())
                 .addValue("timesRead", book.getTimesRead())
-                .addValue("notes", book.getNotes());
+                .addValue("notes", book.getNotes())
+                .addValue("userId", book.getUserId());
 
         if (book.getId() != null) {
             parameters.addValue("id", book.getId());
