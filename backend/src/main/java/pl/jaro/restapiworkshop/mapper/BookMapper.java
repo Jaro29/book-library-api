@@ -21,6 +21,7 @@ public final class BookMapper {
                 .finishDate(createRequest.finishDate())
                 .timesRead(createRequest.timesRead() != null ? createRequest.timesRead() : 0)
                 .notes(createRequest.notes())
+                .coverUrl(createRequest.coverUrl())
                 .build();
     }
 
@@ -35,6 +36,7 @@ public final class BookMapper {
                 .finishDate(patchRequest.finishDate() != null ? patchRequest.finishDate() : book.getFinishDate())
                 .timesRead(patchRequest.timesRead() != null ? patchRequest.timesRead() : book.getTimesRead())
                 .notes(patchRequest.notes() != null ? patchRequest.notes() : book.getNotes())
+                .coverUrl(patchRequest.coverUrl() != null ? patchRequest.coverUrl() : book.getCoverUrl())
                 .build();
     }
 
@@ -48,7 +50,8 @@ public final class BookMapper {
                 book.getStartDate(),
                 book.getFinishDate(),
                 book.getTimesRead(),
-                book.getNotes()
+                book.getNotes(),
+                book.getCoverUrl()
         );
     }
 

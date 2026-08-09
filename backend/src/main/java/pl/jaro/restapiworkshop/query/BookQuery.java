@@ -15,7 +15,8 @@ public final class BookQuery {
                 finish_date,
                 times_read,
                 notes,
-                user_id
+                user_id,
+                cover_url
             )
             VALUES (
                 :title,
@@ -26,7 +27,8 @@ public final class BookQuery {
                 :finishDate,
                 :timesRead,
                 :notes,
-                :userId
+                :userId,
+                :coverUrl
             )
             """;
 
@@ -76,6 +78,7 @@ public final class BookQuery {
                 finish_date = :finishDate,
                 times_read = :timesRead,
                 notes = :notes
+                cover_url = :coverUrl
             WHERE id = :id
               AND user_id = :userId
             """;

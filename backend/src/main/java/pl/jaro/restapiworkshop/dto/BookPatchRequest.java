@@ -21,6 +21,7 @@ public record BookPatchRequest(
         LocalDate finishDate,
 
         Integer timesRead,
-        String notes
+        String notes,
+        String coverUrl
 ) {
 }

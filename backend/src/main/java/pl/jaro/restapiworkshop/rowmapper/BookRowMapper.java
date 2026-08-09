@@ -20,6 +20,7 @@ public class BookRowMapper implements RowMapper<Book> {
                 .finishDate(resultSet.getObject("finish_date", java.time.LocalDate.class))
                 .timesRead(resultSet.getInt("times_read"))
                 .notes(resultSet.getString("notes"))
+                .coverUrl(resultSet.getString("cover_url"))
                 .build();
     }
 }
