@@ -161,7 +161,7 @@ class BookServiceImplTest {
         int pageSize = 10;
 
         when(bookRepository.findAll(page, pageSize, USER_ID)).thenReturn(List.of());
-        when(bookRepository.countAll(USER_ID)).thenReturn(21);
+        when(bookRepository.countAll(USER_ID)).thenReturn(21L);
 
         PageResponse<Book> result = bookService.findAllBooks(page, pageSize, USER_ID);
 
@@ -175,7 +175,7 @@ class BookServiceImplTest {
         int pageSize = 20;
 
         when(bookRepository.findAll(page, pageSize, USER_ID)).thenReturn(List.of());
-        when(bookRepository.countAll(USER_ID)).thenReturn(0);
+        when(bookRepository.countAll(USER_ID)).thenReturn(0L);
 
         PageResponse<Book> result = bookService.findAllBooks(page, pageSize, USER_ID);
 

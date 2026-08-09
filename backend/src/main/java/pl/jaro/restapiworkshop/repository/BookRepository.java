@@ -20,6 +20,6 @@ public interface BookRepository {
 
     void delete(Long id, Long userId);
 
-    int countAll(Long userId);
+    long countAll(Long userId);
 
 }

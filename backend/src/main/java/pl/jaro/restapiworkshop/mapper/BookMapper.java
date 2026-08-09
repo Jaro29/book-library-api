@@ -53,6 +53,9 @@ public final class BookMapper {
     }
 
     private static String normalizeIsbn(String isbn) {
-        return (isbn == null || isbn.isBlank()) ? null : isbn;
+        if (isbn == null || isbn.isBlank()) {
+            return null;
+        }
+        return isbn.replace("-", "").replace(" ", "");
     }
 }
