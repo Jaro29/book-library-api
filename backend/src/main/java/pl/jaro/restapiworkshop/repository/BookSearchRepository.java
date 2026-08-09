@@ -8,5 +8,5 @@ public interface BookSearchRepository {
 
     Collection<Book> searchBooks(String search, int page, int pageSize, Long userId);
 
-    int countBySearch(String search, Long userId);
+    long countBySearch(String search, Long userId);
 }

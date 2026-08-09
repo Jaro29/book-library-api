@@ -45,7 +45,7 @@ public class BookServiceImpl implements BookService {
     @Override
     public PageResponse<Book> findAllBooks(int page, int pageSize, Long userId) {
         Collection<Book> books = bookRepository.findAll(page, pageSize, userId);
-        int totalElements = bookRepository.countAll(userId);
+        long totalElements = bookRepository.countAll(userId);
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
@@ -72,7 +72,7 @@ public class BookServiceImpl implements BookService {
     @Override
     public PageResponse<Book> searchBooks(String search, int page, int pageSize, Long userId) {
         Collection<Book> books = bookSearchRepository.searchBooks(search, page, pageSize, userId);
-        int totalElements = bookSearchRepository.countBySearch(search, userId);
+        long totalElements = bookSearchRepository.countBySearch(search, userId);
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 

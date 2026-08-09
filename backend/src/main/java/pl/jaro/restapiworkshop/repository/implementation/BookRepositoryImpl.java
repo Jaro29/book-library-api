@@ -74,9 +74,9 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public int countAll(Long userId) {
+    public long countAll(Long userId) {
         return execute(() -> {
-            Integer count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, of("userId", userId), Integer.class);
+            Long count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, of("userId", userId), Long.class);
             return count != null ? count : 0;
         });
     }
@@ -118,7 +118,11 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     @Override
     public Collection<Book> searchBooks(String search, int page, int pageSize, Long userId) {
         return execute(() -> {
-            String searchParam = String.format("%%%s%%", search.trim().toLowerCase());
+            String escaped = search.trim().toLowerCase()
+                    .replace("\\", "\\\\")
+                    .replace("%", "\\%")
+                    .replace("_", "\\_");
+            String searchParam = String.format("%%%s%%", escaped);
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("search", searchParam)
                     .addValue("userId", userId);
@@ -127,11 +131,15 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public int countBySearch(String search, Long userId) {
+    public long countBySearch(String search, Long userId) {
         return execute(() -> {
-            String searchParam = String.format("%%%s%%", search.trim().toLowerCase());
-            Integer count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY,
-                    of("search", searchParam, "userId", userId), Integer.class);
+            String escaped = search.trim().toLowerCase()
+                    .replace("\\", "\\\\")
+                    .replace("%", "\\%")
+                    .replace("_", "\\_");
+            String searchParam = String.format("%%%s%%", escaped);
+            Long count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY,
+                    of("search", searchParam, "userId", userId), Long.class);
             return count != null ? count : 0;
         });
     }

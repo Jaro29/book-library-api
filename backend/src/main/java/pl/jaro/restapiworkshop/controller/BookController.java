@@ -1,6 +1,7 @@
 package pl.jaro.restapiworkshop.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -44,7 +45,7 @@ public class BookController {
     @GetMapping("/books")
     public ResponseEntity<PageResponse<BookResponse>> findAllBooks(
             @RequestParam(defaultValue = "0") @Min(0) int page,
-            @RequestParam(defaultValue = "20") @Min(1) int pageSize,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int pageSize,
             @RequestParam(required = false) String search,
             @AuthenticationPrincipal Long userId) {
 
