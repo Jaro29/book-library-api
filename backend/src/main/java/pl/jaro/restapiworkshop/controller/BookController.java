@@ -69,7 +69,8 @@ public class BookController {
     @GetMapping("/books/suggestions")
     public ResponseEntity<List<BookSuggestion>> searchSuggestions(
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) String author) {
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String lang) {
 
         boolean titleEmpty = title == null || title.isBlank();
         boolean authorEmpty = author == null || author.isBlank();
@@ -78,7 +79,7 @@ public class BookController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Podaj tytuł lub autora do wyszukania.");
         }
 
-        List<BookSuggestion> suggestions = googleBooksService.search(title, author);
+        List<BookSuggestion> suggestions = googleBooksService.search(title, author, lang);
         return ResponseEntity.ok(suggestions);
     }
 

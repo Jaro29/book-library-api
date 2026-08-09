@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { inject, Service, signal } from '@angular/core';
 import { Book } from '../models/book';
 import { environment } from '../../environments/environment';
+import { BookSuggestion } from '../models/book-suggestion';
 
 interface PageResponse<T> {
   content: T[];
@@ -27,7 +28,7 @@ export class BookService {
 
     this.http
       .get<PageResponse<Book>>(
-        `${environment.apiUrl}/books?page=${page}&pageSize=${this.pageSize}${searchParam}`
+        `${environment.apiUrl}/books?page=${page}&pageSize=${this.pageSize}${searchParam}`,
       )
       .subscribe((response) => {
         this.books.set(response.content);
@@ -36,7 +37,7 @@ export class BookService {
       });
   }
 
-  createBook(book: { title: string; author: string }, allowDuplicate = false) {
+  createBook(book: Partial<Book>, allowDuplicate = false) {
     return this.http.post<Book>(
       `${environment.apiUrl}/books?allowDuplicate=${allowDuplicate}`,
       book,
@@ -48,6 +49,13 @@ export class BookService {
   }
 
   updateBook(id: number, changes: Partial<Book>) {
-  return this.http.patch<Book>(`${environment.apiUrl}/books/${id}`, changes);
-}
+    return this.http.patch<Book>(`${environment.apiUrl}/books/${id}`, changes);
+  }
+
+  searchSuggestions(author: string, lang: string | null = null) {
+    const langParam = lang ? `&lang=${encodeURIComponent(lang)}` : '';
+    return this.http.get<BookSuggestion[]>(
+      `${environment.apiUrl}/books/suggestions?author=${encodeURIComponent(author)}${langParam}`,
+    );
+  }
 }

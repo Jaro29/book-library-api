@@ -35,13 +35,16 @@ public class GoogleBooksService {
                 .build();
     }
 
-    public List<BookSuggestion> search(String title, String author) {
+    public List<BookSuggestion> search(String title, String author, String lang) {
         String query = buildQuery(title, author);
 
         try {
             JsonNode response = restClient.get()
                     .uri(uriBuilder -> {
                         uriBuilder.queryParam("q", query).queryParam("maxResults", 20);
+                        if (lang != null && !lang.isBlank()) {
+                            uriBuilder.queryParam("langRestrict", lang);
+                        }
                         if (apiKey != null && !apiKey.isBlank()) {
                             uriBuilder.queryParam("key", apiKey);
                         }
@@ -50,7 +53,7 @@ public class GoogleBooksService {
                     .retrieve()
                     .body(JsonNode.class);
 
-            return mapToSuggestions(response);
+            return mapToSuggestions(response, lang);
         } catch (Exception exception) {
             log.warn("Nie udało się pobrać wyników z Google Books: {}", exception.getMessage());
             return List.of();
@@ -71,7 +74,7 @@ public class GoogleBooksService {
         return query.toString();
     }
 
-    private List<BookSuggestion> mapToSuggestions(JsonNode response) {
+    private List<BookSuggestion> mapToSuggestions(JsonNode response, String lang) {
         List<BookSuggestion> suggestions = new ArrayList<>();
         if (response == null || !response.has("items")) {
             return suggestions;
@@ -79,6 +82,13 @@ public class GoogleBooksService {
 
         for (JsonNode item : response.get("items")) {
             JsonNode volumeInfo = item.path("volumeInfo");
+
+            if (lang != null && !lang.isBlank()) {
+                String itemLanguage = volumeInfo.path("language").asText(null);
+                if (!lang.equals(itemLanguage)) {
+                    continue;
+                }
+            }
 
             String bookTitle = volumeInfo.path("title").asText(null);
             if (bookTitle == null) {
