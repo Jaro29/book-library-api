@@ -1,10 +1,12 @@
 package pl.jaro.restapiworkshop.config;
 
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -12,9 +14,11 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import pl.jaro.restapiworkshop.service.JwtService;
 
 import java.io.IOException;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
@@ -29,10 +33,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
             try {
                 Long userId = jwtService.extractUserId(token);
-                var authentication = new UsernamePasswordAuthenticationToken(userId, null, java.util.List.of());
+                var authentication = new UsernamePasswordAuthenticationToken(userId, null, List.of());
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-            } catch (Exception ignored) {
-                // nieprawidłowy token — po prostu nie ustawiamy uwierzytelnienia, żądanie zostanie odrzucone jako 401
+            } catch (JwtException exception) {
+                log.debug("Nieprawidłowy token JWT: {}", exception.getMessage());
+            } catch (Exception exception) {
+                log.error("Nieoczekiwany błąd podczas przetwarzania tokenu JWT", exception);
             }
         }
 

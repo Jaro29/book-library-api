@@ -4,7 +4,7 @@ import lombok.*;
 
 @Getter
 @Setter
-@ToString
+@ToString(exclude = "password")
 @EqualsAndHashCode(of = "id")
 @NoArgsConstructor
 @AllArgsConstructor

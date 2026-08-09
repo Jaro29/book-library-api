@@ -8,9 +8,9 @@ import java.time.LocalDate;
 
 public record BookCreateRequest(
 
-        @NotBlank(message = "Title cannot be blank")
+        @NotBlank(message = "Tytuł nie może być pusty")
         String title,
-        @NotBlank(message = "Author cannot be blank")
+        @NotBlank(message = "Autor nie może być pusty")
         String author,
         @ValidIsbn
         String isbn,
