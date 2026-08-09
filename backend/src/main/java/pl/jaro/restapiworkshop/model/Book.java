@@ -25,6 +25,7 @@ public class Book {
 
     private int timesRead;
     private String notes;
+    private String coverUrl;
 
     private Long userId;
 

@@ -39,7 +39,7 @@ class BookServiceImplTest {
     void shouldThrowWhenDuplicateAndNotAllowed() {
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
-                null, null, null, null, null
+                null, null, null, null, null, null
         );
 
         when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus", USER_ID))
@@ -55,7 +55,7 @@ class BookServiceImplTest {
     void shouldCreateBookWhenDuplicateAllowed() {
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
-                null, null, null, null, null
+                null, null, null, null, null, null
         );
 
         when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus", USER_ID))
@@ -78,7 +78,7 @@ class BookServiceImplTest {
     void shouldRejectBookWhenTimesReadIsNegative() {
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
-                null, null, null, -1, null
+                null, null, null, -1, null, null
         );
 
         when(bookRepository.existsByTitleAndAuthor("Lalka", "Bolesław Prus", USER_ID))
@@ -95,7 +95,7 @@ class BookServiceImplTest {
     void shouldRejectBookWhenFinishedAndTimesReadIsZero() {
         BookCreateRequest request = new BookCreateRequest(
                 "Lalka", "Bolesław Prus", null,
-                BookStatus.FINISHED, null, null, 0, null
+                BookStatus.FINISHED, null, null, 0, null, null
         );
 
         assertThrows(
@@ -119,7 +119,7 @@ class BookServiceImplTest {
 
         BookPatchRequest patchRequest = new BookPatchRequest(
                 "Lalka", "Bolesław Prus", null,
-                null, null, null, null, null
+                null, null, null, null, null, null
         );
 
         when(bookRepository.findById(bookId, USER_ID))
@@ -146,7 +146,7 @@ class BookServiceImplTest {
 
         BookPatchRequest request = new BookPatchRequest(
                 "Lalka", "Bolesław Prus", null,
-                null, null, null, null, null
+                null, null, null, null, null, null
         );
 
         assertThrows(BookNotFoundException.class,

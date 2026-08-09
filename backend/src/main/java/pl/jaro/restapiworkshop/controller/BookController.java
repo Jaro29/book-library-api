@@ -9,13 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import pl.jaro.restapiworkshop.dto.BookCreateRequest;
-import pl.jaro.restapiworkshop.dto.BookPatchRequest;
-import pl.jaro.restapiworkshop.dto.BookResponse;
-import pl.jaro.restapiworkshop.dto.PageResponse;
+import org.springframework.web.server.ResponseStatusException;
+import pl.jaro.restapiworkshop.dto.*;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.service.BookService;
+import pl.jaro.restapiworkshop.service.GoogleBooksService;
 
 import java.util.List;
 
@@ -24,6 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookController {
     private final BookService bookService;
+    private final GoogleBooksService googleBooksService;
 
     @PostMapping("/books")
     public ResponseEntity<BookResponse> createBook(@RequestBody @Valid BookCreateRequest createRequest,
@@ -64,6 +64,23 @@ public class BookController {
                 pageResponse.totalPages()
         );
         return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/books/suggestions")
+    public ResponseEntity<List<BookSuggestion>> searchSuggestions(
+            @RequestParam(required = false) String title,
+            @RequestParam(required = false) String author,
+            @RequestParam(required = false) String lang) {
+
+        boolean titleEmpty = title == null || title.isBlank();
+        boolean authorEmpty = author == null || author.isBlank();
+
+        if (titleEmpty && authorEmpty) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Podaj tytuł lub autora do wyszukania.");
+        }
+
+        List<BookSuggestion> suggestions = googleBooksService.search(title, author, lang);
+        return ResponseEntity.ok(suggestions);
     }
 
     @PatchMapping("/books/{id}")

@@ -167,6 +167,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
                 .addValue("finishDate", book.getFinishDate())
                 .addValue("timesRead", book.getTimesRead())
                 .addValue("notes", book.getNotes())
+                .addValue("coverUrl", book.getCoverUrl())
                 .addValue("userId", book.getUserId());
 
         if (book.getId() != null) {

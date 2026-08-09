@@ -1,51 +1,60 @@
 @if (authService.token()) {
-<header class="app-header">
-  <p class="eyebrow">Katalog osobisty</p>
-  <h1>Biblioteczka</h1>
-  <button class="btn btn-ghost logout-button" (click)="authService.logout()">
-    Wyloguj ({{ authService.displayName() }})
-  </button>
-</header>
+  <header class="app-header">
+    <p class="eyebrow">Katalog osobisty</p>
+    <h1>Biblioteczka</h1>
+    <button class="btn btn-ghost logout-button" (click)="authService.logout()">
+      Wyloguj ({{ authService.displayName() }})
+    </button>
+  </header>
 
-<main class="app-main">
-<div class="toolbar">
-  <div class="search-input-wrapper">
-    <input
-      type="text"
-      placeholder="Szukaj po tytule lub autorze..."
-      [value]="bookService.searchQuery()"
-      (input)="onSearch($any($event.target).value)"
-    />
-    @if (bookService.searchQuery()) {
-      <button
-        type="button"
-        class="clear-search"
-        aria-label="Wyczyść wyszukiwanie"
-        (click)="clearSearch()"
-      >
-        ×
+  <main class="app-main">
+    <div class="toolbar">
+      <div class="search-input-wrapper">
+        <input
+          type="text"
+          placeholder="Szukaj po tytule lub autorze..."
+          [value]="bookService.searchQuery()"
+          (input)="onSearch($any($event.target).value)"
+        />
+        @if (bookService.searchQuery()) {
+          <button
+            type="button"
+            class="clear-search"
+            aria-label="Wyczyść wyszukiwanie"
+            (click)="clearSearch()"
+          >
+            ×
+          </button>
+        }
+      </div>
+      @if (showAddForm()) {
+        <button class="btn btn-ghost" (click)="toggleAddForm()">Zwiń formularz</button>
+      } @else {
+        <button class="btn btn-primary" (click)="toggleAddForm()">+ Dodaj książkę</button>
+      }
+      <button class="btn btn-ghost" (click)="toggleAuthorSearch()">
+        Szukaj po autorze w sieci
       </button>
-    }
-  </div>
-  @if (showAddForm()) {
-    <button class="btn btn-ghost" (click)="toggleAddForm()">Zwiń formularz</button>
-  } @else {
-    <button class="btn btn-primary" (click)="toggleAddForm()">+ Dodaj książkę</button>
-  }
-</div>
+    </div>
 
-  @if (showAddForm()) {
-  <app-add-book-form></app-add-book-form>
-  }
-  <app-book-list></app-book-list>
-</main>
+    @if (showAuthorSearch()) {
+      <app-author-search (closed)="toggleAuthorSearch()"></app-author-search>
+    } @else {
+      @if (showAddForm()) {
+        <app-add-book-form></app-add-book-form>
+      }
+      <app-book-list></app-book-list>
+    }
+  </main>
 } @else {
   @if (showRegister()) {
     <app-register-form (registered)="onRegistered()"></app-register-form>
     <button class="btn btn-ghost" (click)="toggleAuthMode()">Masz już konto? Zaloguj się</button>
   } @else {
     <app-login-form></app-login-form>
-    <button class="btn btn-ghost" (click)="toggleAuthMode()">Nie masz konta? Zarejestruj się</button>
+    <button class="btn btn-ghost" (click)="toggleAuthMode()">
+      Nie masz konta? Zarejestruj się
+    </button>
   }
 }
 <router-outlet></router-outlet>

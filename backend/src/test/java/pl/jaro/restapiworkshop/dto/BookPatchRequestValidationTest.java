@@ -22,7 +22,7 @@ class BookPatchRequestValidationTest {
     @Test
     void shouldRejectPatchWithBlankTitle() {
         BookPatchRequest request = new BookPatchRequest(
-                "   ", null, null, null, null, null, null, null
+                "   ", null, null, null, null, null, null, null, null
         );
 
         Set<ConstraintViolation<BookPatchRequest>> violations = validator.validate(request);
@@ -36,7 +36,7 @@ class BookPatchRequestValidationTest {
     @Test
     void shouldAcceptPatchWithNullTitle() {
         BookPatchRequest request = new BookPatchRequest(
-                null, "Nowy Autor", null, null, null, null, null, null
+                null, "Nowy Autor", null, null, null, null, null, null, null
         );
 
         Set<ConstraintViolation<BookPatchRequest>> violations = validator.validate(request);

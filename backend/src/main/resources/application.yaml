@@ -8,6 +8,8 @@ app:
   jwt:
     secret: ${JWT_SECRET:tajny-klucz-tylko-do-developmentu-zmien-mnie-na-produkcji-12345}
     expiration-ms: 86400000
+  google-books:
+    api-key: ${GOOGLE_BOOKS_API_KEY:}
 
 server:
   servlet:

@@ -20,6 +20,7 @@ public record BookCreateRequest(
         LocalDate finishDate,
 
         Integer timesRead,
-        String notes
+        String notes,
+        String coverUrl
 ) {
 }

@@ -1,0 +1,70 @@
+<div class="author-search-panel">
+  <div class="panel-header">
+    <h2>Szukaj po autorze w sieci</h2>
+    <button type="button" class="btn btn-ghost" (click)="closed.emit()">Zamknij</button>
+  </div>
+
+  <form (submit)="onSearch($event)" class="author-search-form">
+    <input
+      type="text"
+      placeholder="Imię i nazwisko autora..."
+      [value]="author()"
+      (input)="author.set($any($event.target).value)"
+    />
+    <label class="polish-only-toggle">
+      <input
+        type="checkbox"
+        [checked]="polishOnly()"
+        (change)="polishOnly.set($any($event.target).checked)"
+      />
+      Tylko polskie wydania
+    </label>
+    <button type="submit" class="btn btn-primary" [disabled]="searching()">
+      {{ searching() ? 'Szukam...' : 'Szukaj' }}
+    </button>
+  </form>
+
+  @if (error()) {
+    <p class="field-error">{{ error() }}</p>
+  }
+
+  @if (summary()) {
+    <p class="summary-message">{{ summary() }}</p>
+  }
+
+  @if (results().length > 0) {
+    <div class="results-toolbar">
+      <button type="button" class="btn btn-ghost" (click)="selectAll()">Zaznacz wszystko</button>
+      <button type="button" class="btn btn-ghost" (click)="deselectAll()">Odznacz wszystko</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="selectedIndexes().size === 0 || adding()"
+        (click)="addSelected()"
+      >
+        {{ adding() ? 'Dodaję...' : 'Dodaj zaznaczone (' + selectedIndexes().size + ')' }}
+      </button>
+    </div>
+
+    <ul class="suggestion-list">
+      @for (result of results(); track $index) {
+        <li class="suggestion-row">
+          <input
+            type="checkbox"
+            [checked]="selectedIndexes().has($index)"
+            (change)="toggleSelected($index)"
+          />
+          @if (result.coverUrl) {
+            <img [src]="result.coverUrl" [alt]="result.title" class="suggestion-cover" />
+          } @else {
+            <div class="suggestion-cover-placeholder"></div>
+          }
+          <div class="suggestion-info">
+            <strong>{{ result.title }}</strong>
+            <span>{{ result.author }}</span>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</div>

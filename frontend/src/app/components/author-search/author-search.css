@@ -1,0 +1,120 @@
+.author-search-panel {
+  padding: 8px 0 24px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.author-search-form {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.author-search-form input[type='text'] {
+  flex: 1;
+}
+
+.polish-only-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-parchment-muted);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.polish-only-toggle input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-marigold);
+  cursor: pointer;
+}
+
+.results-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.suggestion-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px;
+}
+
+.suggestion-row {
+  position: relative;
+  background: var(--color-cover);
+  border: 1px solid var(--color-spine);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.suggestion-row input[type='checkbox'] {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-marigold);
+  cursor: pointer;
+}
+
+.suggestion-cover,
+.suggestion-cover-placeholder {
+  width: 100%;
+  aspect-ratio: 2 / 3;
+  border-radius: 4px;
+  background: var(--color-cover-alt);
+  object-fit: cover;
+}
+
+.suggestion-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.suggestion-info strong {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  color: var(--color-parchment);
+  line-height: 1.25;
+}
+
+.suggestion-info span {
+  font-style: italic;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: var(--color-parchment-muted);
+}
+
+.summary-message {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-sage);
+  margin-bottom: 12px;
+}
+
+.field-error {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-ember);
+  margin-bottom: 12px;
+}

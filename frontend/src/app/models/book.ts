@@ -8,4 +8,5 @@ export interface Book {
   finishDate: string | null;
   timesRead: number;
   notes: string | null;
+  coverUrl: string | null;
 }
