@@ -5,9 +5,6 @@ spring:
     name: rest-api-workshop
 
 app:
-  security:
-    username: ${APP_USERNAME:admin}
-    password: ${APP_PASSWORD:admin123}
   jwt:
     secret: ${JWT_SECRET:tajny-klucz-tylko-do-developmentu-zmien-mnie-na-produkcji-12345}
     expiration-ms: 86400000
