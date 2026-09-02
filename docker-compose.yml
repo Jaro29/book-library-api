@@ -43,6 +43,7 @@ services:
   
   certbot-renew:
     image: certbot/certbot
+    restart: unless-stopped
     volumes:
       - certbot-etc:/etc/letsencrypt
       - certbot-www:/var/www/certbot
