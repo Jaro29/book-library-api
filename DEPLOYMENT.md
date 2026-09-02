@@ -25,7 +25,7 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 
 ### Pełny stos ✅
 - [x] `docker-compose.yml`: `mariadb` (wolumen `mariadb-data`), `backend`, `frontend`, `certbot`, `certbot-renew`
-- [x] `.env` lokalny i produkcyjny - osobne, wygenerowane hasła (`openssl rand -base64 24`), zapisane w KeePassXC; zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `APP_USERNAME`, `APP_PASSWORD`
+- [x] `.env` lokalny i produkcyjny - osobne, wygenerowane hasła (`openssl rand -base64 24`), zapisane w KeePassXC; zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `GOOGLE_BOOKS_API_KEY`
 
 ### Wdrożenie na serwer ✅
 - [x] `git clone` przez deploy key
@@ -47,6 +47,11 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 - [x] CORS w `SecurityConfig` (`CorsConfigurationSource` bean)
 - [x] Frontend: `AuthService`, `LoginForm`, `RegisterForm`, interceptor z `Bearer <token>`
 - [x] Produkcyjne dane (68 książek) bezpiecznie zmigrowane do modelu multi-user, zero strat
+
+### Wyszukiwanie zewnętrzne ✅
+- [x] BN Data (`data.bn.org.pl`) jako główne źródło - bez klucza API, bez limitów, bez blokad regionalnych, więc **nie wymaga żadnej konfiguracji na serwerze**
+- [x] Google Books jako drugie źródło - wymaga `GOOGLE_BOOKS_API_KEY` w `.env` (Google Cloud Console → Books API → klucz API, bez ograniczeń aplikacji, ograniczony do Books API)
+- [x] Oba źródła mają timeout 3s i zwracają pustą listę przy awarii - niedostępność zewnętrznego katalogu nigdy nie psuje aplikacji
 
 ## Lokalne środowisko deweloperskie
 - Zamiast H2 (in-memory), lokalny development używa **trwałej** MariaDB w Dockerze (`dev-mariadb`, port 3307) - eliminuje powtarzające się niekompatybilności H2/MariaDB przy migracjach (składnia `ALTER TABLE`, nazwy tabel systemowych, automatyczne nazewnictwo ograniczeń)
@@ -87,7 +92,6 @@ git pull
 ```
 
 ### 5. Przebuduj tylko to, co się zmieniło
-### 5. Przebuduj tylko to, co się zmieniło
 - Backend: `docker compose up -d --build backend`, **potem** `docker compose restart frontend` (nginx cache'uje adres IP backendu przy własnym starcie - bez restartu dostaniesz 502 Bad Gateway po każdej przebudowie samego backendu)
 - Frontend: `docker compose up -d --build frontend`
 - Zmiana w `docker-compose.yml` (nowy serwis, nowy port): pełne `docker compose up -d --build` (albo precyzyjnie: `docker compose up -d --build <nowe-serwisy>`, jeśli chcesz uniknąć dotykania niezmienionych)
@@ -102,6 +106,17 @@ Test na żywo: `https://afterword.coffe.ink`
 
 ### Kluczowa zasada: dane przetrwają aktualizacje
 `mariadb-data` to nazwany wolumen - `docker compose up -d --build` nigdy go nie usuwa. Jedyny sposób utraty danych: `docker compose down -v` - **nigdy na serwerze produkcyjnym**.
+
+## Aktualizacja systemu na serwerze
+
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo reboot
+```
+
+Przy pytaniu o pliki konfiguracyjne (np. `sshd_config`) wybrać **"keep the local version currently installed"** - inaczej można nadpisać ustawienia SSH, przez które trwa połączenie.
+
+Po restarcie **zawsze sprawdzić `docker compose ps -a`**, nie tylko `docker compose ps`. Kontenery bez `restart: unless-stopped` **nie wstaną same** i będą widoczne tylko z flagą `-a` (tak właśnie wyszło na jaw, że `certbot-renew` nie miał tej polityki - patrz Incydent #7 w `PROGRESS.md`).
 
 ## Decyzje podjęte po drodze
 - Budowanie obrazów: na serwerze (opcja A)
@@ -124,3 +139,5 @@ Test na żywo: `https://afterword.coffe.ink`
 - **Nowe zmienne env w `docker-compose.yml` trzeba jawnie dopisać w `environment:`** - samo dodanie do `.env` nie wystarczy, `.env` tylko dostarcza wartości dla `${...}` **już użytych** w compose
 - **502 Bad Gateway po `docker compose up -d --build backend`** - nginx nie odświeża automatycznie adresu IP kontenera backendu. Zawsze `docker compose restart frontend` po samodzielnej przebudowie backendu
 - **Bezpieczne wdrażanie migracji NOT NULL na istniejące dane:** rozbij na dwa wdrożenia - (1) nullable kolumna + kod aplikacji, (2) backfill danych przez `UPDATE`, (3) osobna migracja `NOT NULL`, dopiero gdy backfill potwierdzony (np. `SELECT COUNT(*) vs COUNT(kolumna)`)
+- **`restart: unless-stopped` na każdym serwisie, który ma działać ciągle** - brak tej polityki przy `certbot-renew` sprawił, że po restarcie serwera odnawianie certyfikatu cicho przestało działać. Awaria tego typu nie daje żadnego sygnału aż do momentu, gdy jest już za późno
+- **Zewnętrzne API może zwracać inne dane w zależności od adresu IP serwera** - Google Books z serwera Oracle (Niemcy) zwraca katalog niemiecki, mimo `langRestrict=pl` i `country=PL`. Co działa lokalnie, nie musi działać na produkcji - warto testować zewnętrzne integracje **z serwera**, nie tylko z lokalnej maszyny

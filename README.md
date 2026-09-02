@@ -12,6 +12,7 @@ Osobisty katalog książek - aplikacja do śledzenia przeczytanych, czytanych i 
 | Migracje bazy | Flyway |
 | Baza danych | MariaDB (prod i dev - lokalna, trwała instancja przez Docker, patrz "Uruchomienie lokalnie") |
 | Autoryzacja | JWT (jjwt), Spring Security - rejestracja, logowanie, izolacja danych per-user |
+| Zewnętrzne katalogi | BN Data (Biblioteka Narodowa, główne źródło) + Google Books (wydania obcojęzyczne) |
 | Frontend | Angular 22, standalone components, Signal Forms, sygnały jako mechanizm stanu |
 | Szyfrowanie | HTTPS przez Let's Encrypt/Certbot (automatyczne odnawianie) |
 | Serwer statyczny / reverse proxy | nginx |
@@ -60,6 +61,25 @@ Każdy zasób (`Book`) należy do konkretnego użytkownika przez kolumnę `user_
 
 ISBN jest unikalny **per-user** (`UNIQUE(user_id, isbn)`), nie globalnie - różni userzy mogą mieć tę samą książkę.
 
+## Wyszukiwanie w zewnętrznych katalogach
+
+Zamiast wpisywać dane książki ręcznie, można wyszukać autora w zewnętrznym katalogu, zaznaczyć checkboxami interesujące pozycje i dodać je wsadowo.
+
+**Dwa źródła, przełączane checkboxem:**
+
+| Źródło | Zalety | Wady |
+|---|---|---|
+| **BN Data** (domyślne) | Najlepsze pokrycie polskich wydań, dane oficjalne, bez klucza API i limitów | Brak okładek, format MARC wymaga mapowania |
+| **Google Books** | Okładki, dobre pokrycie nowości i wydań obcojęzycznych | Wymaga klucza API, wyniki zależne od regionu IP serwera |
+
+**Dlaczego BN Data jest domyślne:** Google Books dobiera wyniki według regionu adresu IP żądania. Z serwera produkcyjnego (Oracle, Niemcy) zapytanie o polskiego autora zwraca katalog niemiecki - zero polskich wydań, i ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. BN Data, jako polska instytucja hostująca dane dla polskich zbiorów, nie ma tego problemu.
+
+**Mapowanie MARC:** BN Data zwraca zarówno płaskie pola, jak i blok `marc`. Płaskie pola są sklejone (`author` łączy autora, wydawcę i współtwórców; `title` łączy tytuł, podtytuł i serię), więc czyste wartości brane są z MARC: `100$a` (autor główny), `245$a` (tytuł), `020$a` (ISBN), `260$b` (wydawca). Filtrowanie po `100$a` odrzuca też pozycje, w których szukany autor napisał jedynie przedmowę (pole `700`).
+
+**Brak okładek w BN:** karty wyników z BN nie pokazują pustego prostokąta, tylko rok wydania i wydawcę - to w praktyce **jedyne**, co odróżnia pięć różnych wydań tego samego tytułu.
+
+Oba źródła mają timeout 3s i przy awarii zwracają pustą listę zamiast błędu - niedostępność zewnętrznego katalogu nigdy nie blokuje ręcznego dodawania książek.
+
 ## Troubleshooting - nietypowe problemy napotkane po drodze
 
 Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
@@ -76,6 +96,9 @@ Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
 - **H2 vs MariaDB: różne nazwy ograniczeń/tabel systemowych** - H2 automatycznie nazywa proste ograniczenia `UNIQUE` losowo (np. `CONSTRAINT_3C`), MariaDB nazywa je po nazwie kolumny (np. `isbn`); tabela `INFORMATION_SCHEMA.CONSTRAINTS` w starszym H2 nazywa się `TABLE_CONSTRAINTS` w nowszym/ANSI. Po kilku takich niespodziankach - lokalny dev i testy przeniesione na prawdziwą, trwałą MariaDB
 - **502 Bad Gateway po `docker compose up -d --build backend`** - nginx cache'uje adres IP kontenera backendu przy własnym starcie i nie odświeża go automatycznie po przebudowie backendu. Zawsze `docker compose restart frontend` po samodzielnej przebudowie backendu
 - **Spring Boot 4.x zmienił pakiety klas testowych** - np. `@JdbcTest`/`@AutoConfigureTestDatabase` są teraz w `org.springframework.boot.jdbc.test.autoconfigure` (kolejność `jdbc`/`test.autoconfigure` odwrócona względem Spring Boot 2.x/3.x)
+- **Spring Boot 4.x używa Jacksona 3** - pakiet `tools.jackson.databind`, nie `com.fasterxml.jackson.databind`. Kod z importem z Jacksona 2 **skompiluje się**, ale wywali się w runtime na `Type definition error`, bo `RestClient` deserializuje przez Jacksona 3
+- **`ESCAPE '\\'` w Javowym text blocku rozbija zapytanie w MariaDB** - do SQL trafia `ESCAPE '\'`, a MariaDB traktuje backslash jako znak ucieczki wewnątrz literałów, więc widzi niedomknięty string. Użyć znaku, który nie ma specjalnego znaczenia w żadnej warstwie (tu: `ESCAPE '!'`)
+- **`StringHttpMessageConverter` ignoruje `CharacterEncodingFilter`** - ma własne pole `defaultCharset` (historycznie `ISO-8859-1`) i pisze bajty bezpośrednio do strumienia. Polskie znaki w komunikatach błędów wymagają jawnego wymuszenia UTF-8 przez `WebMvcConfigurer.configureMessageConverters`. `MockMvc` w trybie `standaloneSetup` **nie dziedziczy** tej konfiguracji - trzeba ją podać osobno przez `.setMessageConverters(...)`
 
 ## Obsługa błędów
 
@@ -104,7 +127,8 @@ Bazowy URL: `/` (dev: `http://localhost:8080`, prod: przez nginx `/api`)
 | `POST` | `/login` | Logowanie, zwraca JWT |
 | `POST` | `/books?allowDuplicate=false` | Tworzy książkę. 409 przy duplikacie, chyba że `allowDuplicate=true` |
 | `GET` | `/books/{id}` | Pobiera jedną książkę |
-| `GET` | `/books?page=0&pageSize=20` | Lista paginowana |
+| `GET` | `/books?page=0&pageSize=20` | Lista paginowana (`pageSize` max 100), opcjonalny `search` |
+| `GET` | `/books/suggestions?author=...&source=bn` | Podpowiedzi z zewnętrznego katalogu (`source`: `bn` domyślnie albo `google`) |
 | `PATCH` | `/books/{id}` | Częściowa aktualizacja - pola pominięte/`null` pozostają bez zmian |
 | `DELETE` | `/books/{id}` | Usuwa książkę, zwraca 204 |
 
@@ -123,6 +147,7 @@ Tabela `books` (schemat: `backend/src/main/resources/db/migration/V1__create_boo
 | `start_date`, `finish_date` | `DATE` | Oba opcjonalne, niezależnie od statusu |
 | `times_read` | `INT NOT NULL DEFAULT 0` | Liczba przeczytań |
 | `notes` | `TEXT` | Opcjonalne |
+| `cover_url` | `VARCHAR(500)` | Opcjonalne, URL okładki (z Google Books; BN Data nie ma okładek). Trzymany jako URL, nie plik |
 | `user_id` | `BIGINT NOT NULL` | FK do `users.id` |
 
 Tabela `users`:
@@ -194,6 +219,7 @@ Aplikacja dostępna pod `http://localhost` (port 80), backend i baza osiągalne 
 | `DB_USERNAME` | Użytkownik aplikacji do bazy |
 | `DB_PASSWORD` | Hasło użytkownika aplikacji |
 | `JWT_SECRET` | Tajny klucz do podpisywania tokenów (min. 256 bit) |
+| `GOOGLE_BOOKS_API_KEY` | Klucz do Google Books API (opcjonalny - bez niego działa niski, dzielony limit anonimowy; BN Data klucza nie wymaga) |
 
 `.env` jest w `.gitignore` - nigdy nie commitować prawdziwych haseł.
 
@@ -204,13 +230,17 @@ cd backend
 ./mvnw test
 ```
 
-Obejmuje: testy repozytorium na prawdziwym H2 (`@JdbcTest`), testy jednostkowe repozytorium z zamockowanym `NamedParameterJdbcTemplate`, testy serwisu z zamockowanym repozytorium (Mockito - duplikaty, `timesRead`, paginacja), testy walidatora ISBN.
+Obejmuje: testy repozytorium na prawdziwej, lokalnej MariaDB (`@JdbcTest` + `@AutoConfigureTestDatabase(replace = Replace.NONE)`), testy jednostkowe repozytorium z zamockowanym `NamedParameterJdbcTemplate`, testy serwisu z zamockowanym repozytorium (Mockito - duplikaty, `timesRead`, paginacja), testy walidacji DTO i kontrolera (`MockMvc` standalone), testy walidatora ISBN.
 
-`BookRepositoryImplTest` (`@JdbcTest`) uruchamia się na **prawdziwej, lokalnej** MariaDB (`@AutoConfigureTestDatabase(replace = Replace.NONE)`), nie na domyślnej wbudowanej H2 - dla spójności z produkcją i uniknięcia niekompatybilności migracji między silnikami.
+Uruchamianie na realnej MariaDB zamiast domyślnej wbudowanej H2 wynika z doświadczenia: różnice składni między silnikami (`ALTER TABLE`, nazewnictwo ograniczeń, tabele systemowe) potrafiły przepuścić migrację, która działała w teście, a wywalała się na produkcji.
+
+**Znana luka:** brak testów dla wyszukiwania (`searchBooks`/`countBySearch`), `JwtService` i izolacji multi-tenant - patrz backlog w `PROGRESS.md`. Brak tych pierwszych pozwolił raz zepsutemu wyszukiwaniu przeleżeć tygodnie na produkcji (Incydent #6).
 
 ## Znane ograniczenia / dalszy rozwój
 
 Pełny, aktualny backlog - patrz `PROGRESS.md`. Skrótowo:
 - PATCH nie rozróżnia "pole pominięte" od "pole ustawione na `null`" (świadome uproszczenie)
-- Brak dodatkowych pól modelu (okładka, tagi, wydawca, seria) - zaplanowane, nie zaimplementowane
+- Brak dodatkowych pól modelu (tagi, wydawca, seria) - zaplanowane, nie zaimplementowane. Rok wydania i wydawca są **pobierane** z BN Data, ale tylko wyświetlane przy wyborze wydania, nie zapisywane
+- Brakujące testy: wyszukiwanie, `JwtService`, izolacja multi-tenant
+- Otwarte znaleziska z code review: nagłówki bezpieczeństwa, obsługa 401 na froncie, połykane błędy PATCH/DELETE, brak rate limitu na `/login`
 - Deployment zakończony - aplikacja działa produkcyjnie pod https://afterword.coffe.ink (HTTPS, automatyczne odnawianie certyfikatu). Szczegóły w `DEPLOYMENT.md`
