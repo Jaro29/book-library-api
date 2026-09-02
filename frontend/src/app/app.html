@@ -2,6 +2,7 @@
   <header class="app-header">
     <p class="eyebrow">Katalog osobisty</p>
     <h1>Biblioteczka</h1>
+    <p class="header-ornament" aria-hidden="true">❦</p>
     <button class="btn btn-ghost logout-button" (click)="authService.logout()">
       Wyloguj ({{ authService.displayName() }})
     </button>
@@ -47,14 +48,41 @@
     }
   </main>
 } @else {
-  @if (showRegister()) {
-    <app-register-form (registered)="onRegistered()"></app-register-form>
-    <button class="btn btn-ghost" (click)="toggleAuthMode()">Masz już konto? Zaloguj się</button>
-  } @else {
-    <app-login-form></app-login-form>
-    <button class="btn btn-ghost" (click)="toggleAuthMode()">
-      Nie masz konta? Zarejestruj się
-    </button>
-  }
+  <div class="auth-layout">
+    <section class="auth-brand">
+      <p class="eyebrow">Katalog osobisty</p>
+      <h1>AfterWord</h1>
+      <p class="auth-tagline">
+        Prywatna półka na to, co przeczytałeś, czytasz i chcesz przeczytać.
+      </p>
+      <ul class="auth-points">
+        <li>Zapisuj tytuł, autora, daty i liczbę przeczytań</li>
+        <li>Dodawaj książki z katalogu Biblioteki Narodowej, po kilka naraz</li>
+        <li>Twoja biblioteka jest widoczna tylko dla Ciebie</li>
+      </ul>
+
+      <p class="auth-note">
+        <span class="auth-note-mark">❦</span>
+        <span>
+          <strong>Fleuron</strong> - drukarski ornament roślinny, którym od XVI wieku
+          oddzielano sekcje w książkach. Dziś zdobi tę stronę.
+        </span>
+      </p>
+    </section>
+
+    <section class="auth-panel">
+      @if (showRegister()) {
+        <app-register-form (registered)="onRegistered()"></app-register-form>
+        <button class="btn btn-ghost auth-switch" (click)="toggleAuthMode()">
+          Masz już konto? Zaloguj się
+        </button>
+      } @else {
+        <app-login-form></app-login-form>
+        <button class="btn btn-ghost auth-switch" (click)="toggleAuthMode()">
+          Nie masz konta? Zarejestruj się
+        </button>
+      }
+    </section>
+  </div>
 }
 <router-outlet></router-outlet>

@@ -94,3 +94,49 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; animation: none !important; }
 }
+
+.auth-form {
+  background: var(--color-cover);
+  border: 1px solid var(--color-spine);
+  border-radius: 6px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.auth-form h2 {
+  font-size: 1.35rem;
+  margin-bottom: 2px;
+}
+
+.auth-form .field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.auth-form label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-parchment-muted);
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 10px 12px;
+}
+
+.auth-form .field-error {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-ember);
+  line-height: 1.4;
+}
+
+.auth-form .btn {
+  padding: 11px 14px;
+  margin-top: 4px;
+}
