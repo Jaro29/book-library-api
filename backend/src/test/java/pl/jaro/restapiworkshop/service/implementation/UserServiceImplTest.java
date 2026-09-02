@@ -8,8 +8,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.jaro.restapiworkshop.exception.EmailAlreadyExistsException;
 import pl.jaro.restapiworkshop.exception.InvalidCredentialsException;
+import pl.jaro.restapiworkshop.exception.TooManyLoginAttemptsException;
 import pl.jaro.restapiworkshop.model.User;
 import pl.jaro.restapiworkshop.repository.UserRepository;
+import pl.jaro.restapiworkshop.service.LoginRateLimiter;
 
 import java.util.Optional;
 
@@ -30,6 +32,9 @@ class UserServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private LoginRateLimiter loginRateLimiter;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -62,6 +67,8 @@ class UserServiceImplTest {
 
         assertThrows(InvalidCredentialsException.class,
                 () -> userService.login(EMAIL, RAW_PASSWORD));
+
+        verify(loginRateLimiter).recordFailure(EMAIL);
     }
 
     @Test
@@ -71,6 +78,8 @@ class UserServiceImplTest {
 
         assertThrows(InvalidCredentialsException.class,
                 () -> userService.login(EMAIL, "zle-haslo"));
+
+        verify(loginRateLimiter).recordFailure(EMAIL);
     }
 
     @Test
@@ -82,6 +91,19 @@ class UserServiceImplTest {
 
         assertThat(loggedIn.getEmail()).isEqualTo(EMAIL);
         assertThat(loggedIn.getDisplayName()).isEqualTo("Jaro");
+        verify(loginRateLimiter).reset(EMAIL);
+        verify(loginRateLimiter, never()).recordFailure(EMAIL);
+    }
+
+    @Test
+    void shouldNotEvenTouchTheDatabaseWhenAccountIsRateLimited() {
+        doThrow(new TooManyLoginAttemptsException("Zbyt wiele prób."))
+                .when(loginRateLimiter).checkNotBlocked(EMAIL);
+
+        assertThrows(TooManyLoginAttemptsException.class,
+                () -> userService.login(EMAIL, RAW_PASSWORD));
+
+        verify(userRepository, never()).findByEmail(any());
     }
 
     private User sampleUser() {

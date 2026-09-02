@@ -22,8 +22,12 @@ export class LoginForm {
       next: (response) => {
         this.authService.setSession(response.token, response.displayName);
       },
-      error: () => {
-        this.error.set('Nieprawidłowy email lub hasło.');
+      error: (err) => {
+        this.error.set(
+          typeof err.error === 'string' && err.error.trim()
+            ? err.error
+            : 'Nieprawidłowy email lub hasło.',
+        );
       },
     });
   }
