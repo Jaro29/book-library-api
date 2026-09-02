@@ -21,6 +21,7 @@ public class BookRowMapper implements RowMapper<Book> {
                 .timesRead(resultSet.getInt("times_read"))
                 .notes(resultSet.getString("notes"))
                 .coverUrl(resultSet.getString("cover_url"))
+                .userId(resultSet.getLong("user_id"))
                 .build();
     }
 }

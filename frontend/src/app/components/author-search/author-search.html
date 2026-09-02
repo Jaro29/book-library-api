@@ -14,10 +14,10 @@
     <label class="polish-only-toggle">
       <input
         type="checkbox"
-        [checked]="polishOnly()"
-        (change)="polishOnly.set($any($event.target).checked)"
+        [checked]="useBnData()"
+        (change)="useBnData.set($any($event.target).checked)"
       />
-      Tylko polskie wydania
+      Szukaj w polskiej bibliografii (BN)
     </label>
     <button type="submit" class="btn btn-primary" [disabled]="searching()">
       {{ searching() ? 'Szukam...' : 'Szukaj' }}
@@ -44,11 +44,14 @@
       >
         {{ adding() ? 'Dodaję...' : 'Dodaj zaznaczone (' + selectedIndexes().size + ')' }}
       </button>
+      <span class="results-source">
+        Źródło: {{ resultsSource() === 'bn' ? 'Biblioteka Narodowa' : 'Google Books' }}
+      </span>
     </div>
 
-    <ul class="suggestion-list">
+    <ul class="suggestion-list" [class.suggestion-list-compact]="resultsSource() === 'bn'">
       @for (result of results(); track $index) {
-        <li class="suggestion-row">
+        <li class="suggestion-row" [class.suggestion-row-compact]="!result.coverUrl">
           <input
             type="checkbox"
             [checked]="selectedIndexes().has($index)"
@@ -56,12 +59,15 @@
           />
           @if (result.coverUrl) {
             <img [src]="result.coverUrl" [alt]="result.title" class="suggestion-cover" />
-          } @else {
-            <div class="suggestion-cover-placeholder"></div>
           }
           <div class="suggestion-info">
             <strong>{{ result.title }}</strong>
             <span>{{ result.author }}</span>
+            @if (!result.coverUrl) {
+              <span class="suggestion-meta">
+                {{ result.publicationYear }}@if (result.publisher) { · {{ result.publisher }} }
+              </span>
+            }
           </div>
         </li>
       }

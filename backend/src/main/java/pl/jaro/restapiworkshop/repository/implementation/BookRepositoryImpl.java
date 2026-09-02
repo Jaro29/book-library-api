@@ -118,13 +118,8 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     @Override
     public Collection<Book> searchBooks(String search, int page, int pageSize, Long userId) {
         return execute(() -> {
-            String escaped = search.trim().toLowerCase()
-                    .replace("\\", "\\\\")
-                    .replace("%", "\\%")
-                    .replace("_", "\\_");
-            String searchParam = String.format("%%%s%%", escaped);
             SqlParameterSource params = getPaginationParameters(page, pageSize)
-                    .addValue("search", searchParam)
+                    .addValue("search", toLikePattern(search))
                     .addValue("userId", userId);
             return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY, params, new BookRowMapper());
         });
@@ -133,15 +128,18 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     @Override
     public long countBySearch(String search, Long userId) {
         return execute(() -> {
-            String escaped = search.trim().toLowerCase()
-                    .replace("\\", "\\\\")
-                    .replace("%", "\\%")
-                    .replace("_", "\\_");
-            String searchParam = String.format("%%%s%%", escaped);
             Long count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY,
-                    of("search", searchParam, "userId", userId), Long.class);
+                    of("search", toLikePattern(search), "userId", userId), Long.class);
             return count != null ? count : 0;
         });
+    }
+
+    private String toLikePattern(String search) {
+        String escaped = search.trim().toLowerCase()
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+        return "%" + escaped + "%";
     }
 
     private <T> T execute(Supplier<T> action) {

@@ -15,7 +15,8 @@ export class AuthorSearch {
   closed = output<void>();
 
   author = signal('');
-  polishOnly = signal(true);
+  useBnData = signal(true);
+  resultsSource = signal<'bn' | 'google'>('bn');
   results = signal<BookSuggestion[]>([]);
   selectedIndexes = signal<Set<number>>(new Set());
   searching = signal(false);
@@ -23,15 +24,19 @@ export class AuthorSearch {
   summary = signal<string | null>(null);
   error = signal<string | null>(null);
 
+  source = this.useBnData() ? 'bn' : 'google';
+
   onSearch(event: Event) {
     event.preventDefault();
+    const source = this.useBnData() ? 'bn' : 'google';
     this.searching.set(true);
     this.error.set(null);
     this.summary.set(null);
 
-    this.bookService.searchSuggestions(this.author(), this.polishOnly() ? 'pl' : null).subscribe({
+    this.bookService.searchSuggestions(this.author(), source).subscribe({
       next: (suggestions) => {
         this.results.set(suggestions);
+        this.resultsSource.set(source);
         this.selectedIndexes.set(new Set());
         this.searching.set(false);
       },
@@ -76,6 +81,8 @@ export class AuthorSearch {
           author: suggestion.author,
           isbn: suggestion.isbn,
           coverUrl: suggestion.coverUrl,
+          status: 'FINISHED',
+          timesRead: 1,
         })
         .pipe(catchError(() => of(null))),
     );

@@ -54,7 +54,7 @@ public final class BookQuery {
 
     public static final String SELECT_BOOKS_BY_SEARCH_QUERY = """
         SELECT * FROM books
-        WHERE (LOWER(title) LIKE :search ESCAPE '\\' OR LOWER(author) LIKE :search ESCAPE '\\')
+        WHERE (LOWER(title) LIKE :search ESCAPE '!' OR LOWER(author) LIKE :search ESCAPE '!')
           AND user_id = :userId
         ORDER BY id
         LIMIT :pageSize OFFSET :offset
@@ -63,7 +63,7 @@ public final class BookQuery {
     public static final String COUNT_BOOKS_BY_SEARCH_QUERY = """
         SELECT COUNT(*)
         FROM books
-        WHERE (LOWER(title) LIKE :search ESCAPE '\\' OR LOWER(author) LIKE :search ESCAPE '\\')
+        WHERE (LOWER(title) LIKE :search ESCAPE '!' OR LOWER(author) LIKE :search ESCAPE '!')
           AND user_id = :userId
         """;
 
@@ -77,7 +77,7 @@ public final class BookQuery {
                 start_date = :startDate,
                 finish_date = :finishDate,
                 times_read = :timesRead,
-                notes = :notes
+                notes = :notes,
                 cover_url = :coverUrl
             WHERE id = :id
               AND user_id = :userId

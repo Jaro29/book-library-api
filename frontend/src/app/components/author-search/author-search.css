@@ -55,6 +55,17 @@
   gap: 16px;
 }
 
+.suggestion-list-compact {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+.results-source {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-parchment-muted);
+  margin-left: auto;
+}
+
 .suggestion-row {
   position: relative;
   background: var(--color-cover);
@@ -74,6 +85,21 @@
   height: 18px;
   accent-color: var(--color-marigold);
   cursor: pointer;
+}
+
+.suggestion-row-compact {
+  padding: 14px 40px 14px 14px;
+  gap: 4px;
+  justify-content: center;
+  min-height: 96px;
+}
+
+.suggestion-meta {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-parchment-muted);
+  font-style: normal;
+  margin-top: 4px;
 }
 
 .suggestion-cover,

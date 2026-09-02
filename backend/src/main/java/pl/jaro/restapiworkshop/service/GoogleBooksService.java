@@ -101,7 +101,7 @@ public class GoogleBooksService {
             String coverUrl = volumeInfo.path("imageLinks").path("thumbnail").asText(null);
             String isbn = extractIsbn(volumeInfo.path("industryIdentifiers"));
 
-            suggestions.add(new BookSuggestion(bookTitle, bookAuthor, isbn, coverUrl));
+            suggestions.add(new BookSuggestion(bookTitle, bookAuthor, isbn, coverUrl, null, null));
         }
 
         return suggestions;

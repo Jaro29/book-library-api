@@ -52,10 +52,10 @@ export class BookService {
     return this.http.patch<Book>(`${environment.apiUrl}/books/${id}`, changes);
   }
 
-  searchSuggestions(author: string, lang: string | null = null) {
-    const langParam = lang ? `&lang=${encodeURIComponent(lang)}` : '';
-    return this.http.get<BookSuggestion[]>(
-      `${environment.apiUrl}/books/suggestions?author=${encodeURIComponent(author)}${langParam}`,
-    );
-  }
+searchSuggestions(author: string, source: 'bn' | 'google') {
+  const langParam = source === 'google' ? '&lang=pl' : '';
+  return this.http.get<BookSuggestion[]>(
+    `${environment.apiUrl}/books/suggestions?author=${encodeURIComponent(author)}&source=${source}${langParam}`,
+  );
+}
 }

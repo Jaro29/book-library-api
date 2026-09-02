@@ -28,6 +28,7 @@ public final class BookMapper {
     public static Book toBook(BookPatchRequest patchRequest, Book book) {
         return Book.builder()
                 .id(book.getId())
+                .userId(book.getUserId())
                 .title(patchRequest.title() != null ? patchRequest.title() : book.getTitle())
                 .author(patchRequest.author() != null ? patchRequest.author() : book.getAuthor())
                 .isbn(patchRequest.isbn() != null ? normalizeIsbn(patchRequest.isbn()) : book.getIsbn())
