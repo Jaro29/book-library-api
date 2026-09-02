@@ -4,6 +4,8 @@ public record BookSuggestion(
         String title,
         String author,
         String isbn,
-        String coverUrl
+        String coverUrl,
+        String publicationYear,
+        String publisher
 ) {
 }

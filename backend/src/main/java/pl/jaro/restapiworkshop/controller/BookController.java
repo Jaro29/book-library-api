@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pl.jaro.restapiworkshop.dto.*;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.service.BnDataService;
 import pl.jaro.restapiworkshop.service.BookService;
 import pl.jaro.restapiworkshop.service.GoogleBooksService;
 
@@ -24,6 +25,7 @@ import java.util.List;
 public class BookController {
     private final BookService bookService;
     private final GoogleBooksService googleBooksService;
+    private final BnDataService bnDataService;
 
     @PostMapping("/books")
     public ResponseEntity<BookResponse> createBook(@RequestBody @Valid BookCreateRequest createRequest,
@@ -70,7 +72,8 @@ public class BookController {
     public ResponseEntity<List<BookSuggestion>> searchSuggestions(
             @RequestParam(required = false) String title,
             @RequestParam(required = false) String author,
-            @RequestParam(required = false) String lang) {
+            @RequestParam(required = false) String lang,
+            @RequestParam(defaultValue = "bn") String source) {
 
         boolean titleEmpty = title == null || title.isBlank();
         boolean authorEmpty = author == null || author.isBlank();
@@ -79,7 +82,10 @@ public class BookController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Podaj tytuł lub autora do wyszukania.");
         }
 
-        List<BookSuggestion> suggestions = googleBooksService.search(title, author, lang);
+        List<BookSuggestion> suggestions = "google".equals(source)
+                ? googleBooksService.search(title, author, lang)
+                : bnDataService.search(title, author);
+
         return ResponseEntity.ok(suggestions);
     }
 

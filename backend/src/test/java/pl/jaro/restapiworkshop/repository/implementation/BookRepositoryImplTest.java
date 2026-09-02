@@ -76,6 +76,28 @@ class BookRepositoryImplTest {
         assertThrows(BookNotFoundException.class, () -> bookRepository.findById(saved.getId(), USER_ID));
     }
 
+    @Test
+    void shouldUpdateBook() {
+        Book saved = bookRepository.create(sampleBook("Przed zmianą"));
+
+        saved.setTitle("Po zmianie");
+        saved.setNotes("notatka");
+        bookRepository.update(saved);
+
+        Book updated = bookRepository.findById(saved.getId(), USER_ID);
+        assertThat(updated.getTitle()).isEqualTo("Po zmianie");
+        assertThat(updated.getNotes()).isEqualTo("notatka");
+    }
+
+    @Test
+    void shouldNotUpdateBookOfAnotherUser() {
+        Book saved = bookRepository.create(sampleBook("Cudza książka"));
+        saved.setUserId(999L);
+        saved.setTitle("Przejęta");
+
+        assertThrows(BookNotFoundException.class, () -> bookRepository.update(saved));
+    }
+
     private Book sampleBook(String title) {
         Book book = new Book();
         book.setTitle(title);

@@ -8,6 +8,7 @@ import org.springframework.http.converter.json.JacksonJsonHttpMessageConverter;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import pl.jaro.restapiworkshop.exception.GlobalExceptionHandler;
+import pl.jaro.restapiworkshop.service.BnDataService;
 import pl.jaro.restapiworkshop.service.BookService;
 import pl.jaro.restapiworkshop.service.GoogleBooksService;
 
@@ -28,18 +29,20 @@ class BookControllerValidationTest {
     private MockMvc mockMvc;
     private BookService bookService;
     private GoogleBooksService googleBooksService;
+    private BnDataService bnDataService;
 
 
     @BeforeEach
     void setUp() {
         bookService = mock(BookService.class);
         googleBooksService = mock(GoogleBooksService.class);
+        bnDataService = mock(BnDataService.class);
 
 
         StringHttpMessageConverter utf8StringConverter = new StringHttpMessageConverter(StandardCharsets.UTF_8);
 
         mockMvc = MockMvcBuilders
-                .standaloneSetup(new BookController(bookService,googleBooksService))
+                .standaloneSetup(new BookController(bookService, googleBooksService, bnDataService))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .setMessageConverters(utf8StringConverter, new JacksonJsonHttpMessageConverter())
                 .build();

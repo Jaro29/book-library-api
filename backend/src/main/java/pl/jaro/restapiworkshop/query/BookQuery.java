@@ -77,7 +77,7 @@ public final class BookQuery {
                 start_date = :startDate,
                 finish_date = :finishDate,
                 times_read = :timesRead,
-                notes = :notes
+                notes = :notes,
                 cover_url = :coverUrl
             WHERE id = :id
               AND user_id = :userId
