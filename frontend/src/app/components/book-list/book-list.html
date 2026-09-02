@@ -67,6 +67,20 @@
     }
   </ul>
 
+  @if (books().length === 0) {
+  <div class="empty-state">
+    <p class="empty-ornament" aria-hidden="true">❦</p>
+    @if (bookService.searchQuery()) {
+    <p class="empty-title">Nic nie znaleziono</p>
+    <p class="empty-hint">Żadna książka nie pasuje do wpisanej frazy.</p>
+    } @else {
+    <p class="empty-title">Twoja biblioteczka jest pusta</p>
+    <p class="empty-hint">Dodaj pierwszą książkę albo poszukaj autora w katalogu Biblioteki Narodowej.</p>
+    }
+  </div>
+  }
+
+  @if (totalPages() > 0) {
   <div class="pagination">
     <button class="btn" (click)="previousPage()" [disabled]="currentPage() === 0">
       ← Poprzednia
@@ -76,4 +90,9 @@
       Następna →
     </button>
   </div>
+
+  @if (currentPage() + 1 >= totalPages()) {
+  <p class="list-end" aria-hidden="true">❦</p>
+  }
+  }
 </section>

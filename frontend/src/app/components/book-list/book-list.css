@@ -46,6 +46,44 @@
 
 .pagination { display: flex; align-items: center; justify-content: center; gap: 16px; padding-top: 8px; }
 .pagination-label { font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-parchment-muted); }
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  border: 1px dashed var(--color-spine);
+  border-radius: 6px;
+}
+
+.empty-ornament {
+  margin: 0 0 16px;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: var(--color-marigold);
+  opacity: 0.45;
+}
+
+.empty-title {
+  margin: 0 0 6px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: var(--color-parchment);
+}
+
+.empty-hint {
+  margin: 0 auto;
+  max-width: 42ch;
+  font-size: 0.9rem;
+  color: var(--color-parchment-muted);
+}
+
+.list-end {
+  margin: 4px 0 0;
+  text-align: center;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--color-spine);
+}
 .book-times-read {
   font-family: var(--font-mono);
   font-size: 0.75rem;
