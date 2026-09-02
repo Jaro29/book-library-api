@@ -65,6 +65,13 @@
   font-size: 0.9rem;
 }
 
+.delete-confirm .field-error {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--color-ember);
+  max-width: 260px;
+}
+
 .icon-btn {
   display: flex;
   align-items: center;

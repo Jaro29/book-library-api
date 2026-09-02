@@ -27,19 +27,35 @@ export class BookList implements OnInit {
   }
 
   onDelete(id: number) {
-    this.bookService.deleteBook(id).subscribe(() => {
-      this.bookService.loadBooks(this.currentPage());
+    this.deleteError.set(null);
+    this.deletingId.set(id);
+    this.bookService.deleteBook(id).subscribe({
+      next: () => {
+        this.deletingId.set(null);
+        this.confirmingDeleteId.set(null);
+        this.bookService.loadBooks(this.currentPage());
+      },
+      error: (err) => {
+        this.deletingId.set(null);
+        this.deleteError.set(
+          typeof err.error === 'string' ? err.error : 'Nie udało się usunąć książki. Spróbuj ponownie.',
+        );
+      },
     });
   }
 
-  
+  deletingId = signal<number | null>(null);
+  deleteError = signal<string | null>(null);
+
   confirmingDeleteId = signal<number | null>(null);
-  
+
   askDeleteConfirmation(id: number){
+    this.deleteError.set(null);
     this.confirmingDeleteId.set(id);
   }
 
   cancelDeleteConfirmation(){
+    this.deleteError.set(null);
     this.confirmingDeleteId.set(null);
   }
 

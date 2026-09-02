@@ -31,8 +31,14 @@
       </div>
       @if (confirmingDeleteId() === book.id) {
       <div class="delete-confirm">
+        @if (deleteError()) {
+        <span class="field-error">{{ deleteError() }}</span>
+        } @else {
         <span>Na pewno?</span>
-        <button class="btn btn-danger" (click)="onDelete(book.id)">Tak, usuń</button>
+        }
+        <button class="btn btn-danger" [disabled]="deletingId() === book.id" (click)="onDelete(book.id)">
+          {{ deletingId() === book.id ? 'Usuwanie...' : 'Tak, usuń' }}
+        </button>
         <button class="btn btn-ghost" (click)="cancelDeleteConfirmation()">Anuluj</button>
       </div>
       } @else {
