@@ -20,7 +20,7 @@ export class BookService {
   currentPage = signal(0);
   totalPages = signal(0);
   searchQuery = signal('');
-  pageSize = 10;
+  pageSize = 20;
 
   loadBooks(page: number = 0) {
     const search = this.searchQuery();
