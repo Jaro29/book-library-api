@@ -2,7 +2,7 @@ package pl.jaro.restapiworkshop.repository.implementation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -75,7 +75,7 @@ public class UserRepositoryImpl implements UserRepository {
     private <T> T execute(Supplier<T> action) {
         try {
             return action.get();
-        } catch (DataIntegrityViolationException exception) {
+        } catch (DuplicateKeyException exception) {
             throw new EmailAlreadyExistsException("Ten adres e-mail jest już używany. Użyj innego adresu e-mail i spróbuj ponownie.");
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);

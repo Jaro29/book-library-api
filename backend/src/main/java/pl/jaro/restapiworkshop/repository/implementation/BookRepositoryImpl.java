@@ -2,7 +2,7 @@ package pl.jaro.restapiworkshop.repository.implementation;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -147,7 +147,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
             return action.get();
         } catch (BookNotFoundException exception) {
             throw exception;
-        } catch (DataIntegrityViolationException exception) {
+        } catch (DuplicateKeyException exception) {
             throw new DuplicateBookException("Książka o tym tytule, autorze lub ISBN już istnieje.");
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
