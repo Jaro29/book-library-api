@@ -9,15 +9,19 @@ import tools.jackson.databind.JsonNode;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 @Slf4j
 public class BnDataService {
 
-    private static final int FETCH_LIMIT = 50;
-    private static final int MAX_RESULTS = 20;
+    private static final int FETCH_LIMIT = 100;
+    private static final int MAX_RESULTS = 50;
+    private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
 
     private final RestClient restClient;
 
@@ -60,16 +64,12 @@ public class BnDataService {
     }
 
     private List<BookSuggestion> mapToSuggestions(JsonNode response, String requestedAuthor) {
-        List<BookSuggestion> suggestions = new ArrayList<>();
+        Map<String, BookSuggestion> oldestByTitle = new LinkedHashMap<>();
         if (response == null || !response.has("bibs")) {
-            return suggestions;
+            return List.of();
         }
 
         for (JsonNode bib : response.get("bibs")) {
-            if (suggestions.size() >= MAX_RESULTS) {
-                break;
-            }
-
             JsonNode fields = bib.path("marc").path("fields");
 
             if (!"polski".equals(bib.path("language").asString(null))) {
@@ -81,7 +81,7 @@ public class BnDataService {
                 continue;
             }
 
-            String bookTitle = cleanup(subfield(fields, "245", "a"));
+            String bookTitle = buildTitle(fields);
             if (bookTitle == null || bookTitle.isBlank()) {
                 continue;
             }
@@ -90,17 +90,50 @@ public class BnDataService {
             String publisher = cleanup(subfield(fields, "260", "b"));
             String publicationYear = bib.path("publicationYear").asString(null);
 
-            suggestions.add(new BookSuggestion(
+            BookSuggestion suggestion = new BookSuggestion(
                     bookTitle,
                     cleanup(mainAuthor),
                     isbn,
                     null,
                     publicationYear,
                     publisher
-            ));
+            );
+
+            oldestByTitle.merge(bookTitle.toLowerCase(), suggestion, this::olderEdition);
         }
 
-        return suggestions;
+        return oldestByTitle.values().stream().limit(MAX_RESULTS).toList();
+    }
+
+    private BookSuggestion olderEdition(BookSuggestion current, BookSuggestion candidate) {
+        Integer currentYear = extractYear(current.publicationYear());
+        Integer candidateYear = extractYear(candidate.publicationYear());
+
+        if (candidateYear == null) {
+            return current;
+        }
+        if (currentYear == null || candidateYear < currentYear) {
+            return candidate;
+        }
+        return current;
+    }
+
+    private Integer extractYear(String publicationYear) {
+        if (publicationYear == null) {
+            return null;
+        }
+        Matcher matcher = YEAR_PATTERN.matcher(publicationYear);
+        return matcher.find() ? Integer.valueOf(matcher.group()) : null;
+    }
+
+    private String buildTitle(JsonNode fields) {
+        String mainTitle = cleanup(subfield(fields, "245", "a"));
+        String partNumber = cleanup(subfield(fields, "245", "n"));
+
+        if (mainTitle == null || partNumber == null || partNumber.isBlank()) {
+            return mainTitle;
+        }
+        return mainTitle + " " + partNumber;
     }
 
     private boolean authorMatches(String mainAuthor, String requestedAuthor) {
