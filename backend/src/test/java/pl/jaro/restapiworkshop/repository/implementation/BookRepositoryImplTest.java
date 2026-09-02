@@ -11,6 +11,8 @@ import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.model.BookStatus;
 
+import java.util.Collection;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -96,6 +98,75 @@ class BookRepositoryImplTest {
         saved.setTitle("Przejęta");
 
         assertThrows(BookNotFoundException.class, () -> bookRepository.update(saved));
+    }
+
+    @Test
+    void shouldFindBookByTitleFragment() {
+        bookRepository.create(sampleBook("Zzyzx Kwikwidacja"));
+
+        Collection<Book> found = bookRepository.searchBooks("kwikwid", 0, 20, USER_ID);
+
+        assertThat(found).hasSize(1);
+        assertThat(found.iterator().next().getTitle()).isEqualTo("Zzyzx Kwikwidacja");
+    }
+
+    @Test
+    void shouldFindBookByAuthorFragment() {
+        Book book = sampleBook("Zzyzx Autorska");
+        book.setAuthor("Bardzozacnyautor Testowy");
+        bookRepository.create(book);
+
+        Collection<Book> found = bookRepository.searchBooks("zacnyaut", 0, 20, USER_ID);
+
+        assertThat(found).hasSize(1);
+    }
+
+    @Test
+    void shouldIgnoreCaseWhenSearching() {
+        bookRepository.create(sampleBook("Zzyzx Wielkoliterowa"));
+
+        Collection<Book> found = bookRepository.searchBooks("WIELKOLITEROWA", 0, 20, USER_ID);
+
+        assertThat(found).hasSize(1);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenNothingMatches() {
+        Collection<Book> found = bookRepository.searchBooks("qqxzwv-nie-ma-takiej", 0, 20, USER_ID);
+
+        assertThat(found).isEmpty();
+    }
+
+    @Test
+    void shouldTreatWildcardCharactersAsLiteralText() {
+        bookRepository.create(sampleBook("Zzyzx Zwykły Tytuł"));
+
+        Collection<Book> foundByPercent = bookRepository.searchBooks("%", 0, 20, USER_ID);
+        Collection<Book> foundByUnderscore = bookRepository.searchBooks("_", 0, 20, USER_ID);
+
+        assertThat(foundByPercent).noneMatch(book -> "Zzyzx Zwykły Tytuł".equals(book.getTitle()));
+        assertThat(foundByUnderscore).noneMatch(book -> "Zzyzx Zwykły Tytuł".equals(book.getTitle()));
+    }
+
+    @Test
+    void shouldCountTheSameBooksThatSearchReturns() {
+        bookRepository.create(sampleBook("Zzyzx Policzalna Pierwsza"));
+        bookRepository.create(sampleBook("Zzyzx Policzalna Druga"));
+
+        Collection<Book> found = bookRepository.searchBooks("zzyzx policzalna", 0, 20, USER_ID);
+        long count = bookRepository.countBySearch("zzyzx policzalna", USER_ID);
+
+        assertThat(found).hasSize(2);
+        assertThat(count).isEqualTo(2);
+    }
+
+    @Test
+    void shouldNotFindBooksOfAnotherUser() {
+        bookRepository.create(sampleBook("Zzyzx Cudza Wyszukiwana"));
+
+        Collection<Book> found = bookRepository.searchBooks("cudza wyszukiwana", 0, 20, 999L);
+
+        assertThat(found).isEmpty();
     }
 
     private Book sampleBook(String title) {
