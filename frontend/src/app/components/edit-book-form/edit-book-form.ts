@@ -49,18 +49,23 @@ export class EditBookForm implements OnInit {
     min(path.timesRead, 0, { message: 'Liczba przeczytań nie może być ujemna' });
     });
 
+  protected saveError = signal<string | null>(null);
+
   protected onSubmit(event: Event) {
     event.preventDefault();
     if (this.bookForm().invalid()) {
       return;
     }
+    this.saveError.set(null);
     this.bookService.updateBook(this.book().id, this.model()).subscribe({
       next: () => {
         this.bookService.loadBooks(this.bookService.currentPage());
         this.saved.emit();
       },
       error: (err) => {
-        console.error('Błąd:', err);
+        this.saveError.set(
+          typeof err.error === 'string' ? err.error : 'Nie udało się zapisać zmian. Spróbuj ponownie.',
+        );
       },
     });
   }

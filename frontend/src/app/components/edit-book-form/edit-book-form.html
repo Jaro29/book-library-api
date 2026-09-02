@@ -56,4 +56,8 @@
     <button type="submit" class="btn btn-primary" [disabled]="bookForm().invalid()">Zapisz</button>
     <button type="button" class="btn btn-ghost" (click)="cancelled.emit()">Anuluj</button>
   </div>
+
+  @if (saveError()) {
+    <span class="field-wide field-error">{{ saveError() }}</span>
+  }
 </form>
