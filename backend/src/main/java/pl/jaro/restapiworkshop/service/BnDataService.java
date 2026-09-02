@@ -92,7 +92,7 @@ public class BnDataService {
 
             BookSuggestion suggestion = new BookSuggestion(
                     bookTitle,
-                    cleanup(mainAuthor),
+                    toNaturalNameOrder(cleanup(mainAuthor)),
                     isbn,
                     null,
                     publicationYear,
@@ -124,6 +124,24 @@ public class BnDataService {
         }
         Matcher matcher = YEAR_PATTERN.matcher(publicationYear);
         return matcher.find() ? Integer.valueOf(matcher.group()) : null;
+    }
+
+    private String toNaturalNameOrder(String author) {
+        if (author == null) {
+            return null;
+        }
+        int comma = author.indexOf(',');
+        if (comma < 0) {
+            return author;
+        }
+
+        String surname = author.substring(0, comma).trim();
+        String givenNames = author.substring(comma + 1).trim();
+
+        if (surname.isEmpty() || givenNames.isEmpty()) {
+            return author;
+        }
+        return givenNames + " " + surname;
     }
 
     private String buildTitle(JsonNode fields) {
