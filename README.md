@@ -61,6 +61,10 @@ Każdy zasób (`Book`) należy do konkretnego użytkownika przez kolumnę `user_
 
 ISBN jest unikalny **per-user** (`UNIQUE(user_id, isbn)`), nie globalnie - różni userzy mogą mieć tę samą książkę.
 
+**Wygasły token:** żądanie z nieważnym tokenem dostaje **401** (przez `HttpStatusEntryPoint`, bo Spring Security domyślnie odpowiada 403, co semantycznie znaczy co innego). Interceptor po stronie frontendu przechwytuje 401, czyści sesję i przerzuca użytkownika na ekran logowania, zamiast pozwolić aplikacji cicho przestać działać.
+
+**Ochrona przed zgadywaniem hasła:** pięć nieudanych logowań blokuje **konto** na piętnaście minut; udane logowanie kasuje licznik. Kluczem jest email, nie adres IP - zagrożeniem jest zgadywanie hasła do konkretnego konta, a klucz emailowy nie da się obejść zmianą adresu i nie wymaga zaufania nagłówkom proxy. Licznik żyje w pamięci aplikacji, co przy jednej instancji w zupełności wystarcza.
+
 ## Wyszukiwanie w zewnętrznych katalogach
 
 Zamiast wpisywać dane książki ręcznie, można wyszukać autora w zewnętrznym katalogu, zaznaczyć checkboxami interesujące pozycje i dodać je wsadowo.
@@ -74,7 +78,9 @@ Zamiast wpisywać dane książki ręcznie, można wyszukać autora w zewnętrzny
 
 **Dlaczego BN Data jest domyślne:** Google Books dobiera wyniki według regionu adresu IP żądania. Z serwera produkcyjnego (Oracle, Niemcy) zapytanie o polskiego autora zwraca katalog niemiecki - zero polskich wydań, i ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. BN Data, jako polska instytucja hostująca dane dla polskich zbiorów, nie ma tego problemu.
 
-**Mapowanie MARC:** BN Data zwraca zarówno płaskie pola, jak i blok `marc`. Płaskie pola są sklejone (`author` łączy autora, wydawcę i współtwórców; `title` łączy tytuł, podtytuł i serię), więc czyste wartości brane są z MARC: `100$a` (autor główny), `245$a` (tytuł), `020$a` (ISBN), `260$b` (wydawca). Filtrowanie po `100$a` odrzuca też pozycje, w których szukany autor napisał jedynie przedmowę (pole `700`).
+**Mapowanie MARC:** BN Data zwraca zarówno płaskie pola, jak i blok `marc`. Płaskie pola są sklejone (`author` łączy autora, wydawcę i współtwórców; `title` łączy tytuł, podtytuł i serię), więc czyste wartości brane są z MARC: `100$a` (autor główny), `245$a` (tytuł), `245$n` (numer tomu), `020$a` (ISBN), `260$b` (wydawca). Filtrowanie po `100$a` odrzuca też pozycje, w których szukany autor napisał jedynie przedmowę (pole `700`).
+
+**Tomy i wydania:** numer tomu doklejany jest do tytułu, więc kolejne części cyklu nie wyglądają na duplikaty. Wyniki są deduplikowane po tytule z zachowaniem najstarszego wydania - bez tego kilkanaście wydań jednego bestselleru zapełniało całą listę i wypychało pozostałe książki autora.
 
 **Brak okładek w BN:** karty wyników z BN nie pokazują pustego prostokąta, tylko rok wydania i wydawcę - to w praktyce **jedyne**, co odróżnia pięć różnych wydań tego samego tytułu.
 
@@ -112,6 +118,7 @@ Trzy osobne wyjątki domenowe, bez znajomości HTTP - `GlobalExceptionHandler` (
 | `ConstraintViolationException` | 400 | `page`/`pageSize` poza dozwolonym zakresem |
 | `EmailAlreadyExistsException` | 409 | Email już zarejestrowany |
 | `InvalidCredentialsException` | 401 | Błędny email lub hasło (celowo ten sam komunikat dla obu przypadków) |
+| `TooManyLoginAttemptsException` | 429 | Pięć nieudanych logowań na to samo konto w ciągu 15 minut |
 | Walidacja `@Valid`/`@NotBlank`/`ValidIsbn` | 400 | Nieprawidłowy kształt danych w body żądania |
 | `ApiException` | 500 | Nieoczekiwana awaria infrastruktury (baza padła, itp.) - **jedyny** przypadek 500 w tym API |
 
@@ -124,7 +131,7 @@ Bazowy URL: `/` (dev: `http://localhost:8080`, prod: przez nginx `/api`)
 | Metoda | Ścieżka | Opis |
 |---|---|---|
 | `POST` | `/register` | Rejestracja (displayName, email, hasło min. 8 znaków) |
-| `POST` | `/login` | Logowanie, zwraca JWT |
+| `POST` | `/login` | Logowanie, zwraca JWT. 429 po pięciu nieudanych próbach na konto |
 | `POST` | `/books?allowDuplicate=false` | Tworzy książkę. 409 przy duplikacie, chyba że `allowDuplicate=true` |
 | `GET` | `/books/{id}` | Pobiera jedną książkę |
 | `GET` | `/books?page=0&pageSize=20` | Lista paginowana (`pageSize` max 100), opcjonalny `search` |
@@ -230,17 +237,17 @@ cd backend
 ./mvnw test
 ```
 
-Obejmuje: testy repozytorium na prawdziwej, lokalnej MariaDB (`@JdbcTest` + `@AutoConfigureTestDatabase(replace = Replace.NONE)`), testy jednostkowe repozytorium z zamockowanym `NamedParameterJdbcTemplate`, testy serwisu z zamockowanym repozytorium (Mockito - duplikaty, `timesRead`, paginacja), testy walidacji DTO i kontrolera (`MockMvc` standalone), testy walidatora ISBN.
+Obejmuje: testy repozytorium na prawdziwej, lokalnej MariaDB (`@JdbcTest` + `@AutoConfigureTestDatabase(replace = Replace.NONE)`) - CRUD, wyszukiwanie i izolacja per-user; testy jednostkowe repozytorium z zamockowanym `NamedParameterJdbcTemplate`; testy serwisu z zamockowanym repozytorium (duplikaty, `timesRead`, paginacja, logowanie); testy `JwtService` (round trip oraz cztery sposoby odrzucenia tokenu) i `LoginRateLimiter`; testy walidacji DTO i kontrolera (`MockMvc` standalone); testy walidatora ISBN.
 
 Uruchamianie na realnej MariaDB zamiast domyślnej wbudowanej H2 wynika z doświadczenia: różnice składni między silnikami (`ALTER TABLE`, nazewnictwo ograniczeń, tabele systemowe) potrafiły przepuścić migrację, która działała w teście, a wywalała się na produkcji.
 
-**Znana luka:** brak testów dla wyszukiwania (`searchBooks`/`countBySearch`), `JwtService` i izolacji multi-tenant - patrz backlog w `PROGRESS.md`. Brak tych pierwszych pozwolił raz zepsutemu wyszukiwaniu przeleżeć tygodnie na produkcji (Incydent #6).
+**Świadomie pominięte:** test izolacji multi-tenant na poziomie serwisu. `BookServiceImpl` tylko przekazuje `userId` dalej, więc taki test asertowałby na mockach - realną izolację wymusza SQL i pokrywają testy repozytorium na prawdziwej bazie.
 
 ## Znane ograniczenia / dalszy rozwój
 
 Pełny, aktualny backlog - patrz `PROGRESS.md`. Skrótowo:
 - PATCH nie rozróżnia "pole pominięte" od "pole ustawione na `null`" (świadome uproszczenie)
-- Brak dodatkowych pól modelu (tagi, wydawca, seria) - zaplanowane, nie zaimplementowane. Rok wydania i wydawca są **pobierane** z BN Data, ale tylko wyświetlane przy wyborze wydania, nie zapisywane
-- Brakujące testy: wyszukiwanie, `JwtService`, izolacja multi-tenant
-- Otwarte znaleziska z code review: nagłówki bezpieczeństwa, obsługa 401 na froncie, połykane błędy PATCH/DELETE, brak rate limitu na `/login`
+- Brak dodatkowych pól modelu (tagi, wydawca, seria, data dodania) - zaplanowane, nie zaimplementowane. Rok wydania i wydawca są **pobierane** z BN Data, ale tylko wyświetlane przy wyborze wydania, nie zapisywane
+- Wyszukiwanie w Google Books nie filtruje autora po stronie klienta, więc `inauthor:` bywa nieprecyzyjne. BN Data (źródło domyślne) ma to zrobione
+- Wdrożenie w pełni ręczne - CI/CD w backlogu
 - Deployment zakończony - aplikacja działa produkcyjnie pod https://afterword.coffe.ink (HTTPS, automatyczne odnawianie certyfikatu). Szczegóły w `DEPLOYMENT.md`

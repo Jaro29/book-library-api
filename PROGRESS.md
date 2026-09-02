@@ -21,6 +21,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 ### POST /login
 - Request: `LoginRequest` (email, password)
 - 401: `InvalidCredentialsException` (ten sam komunikat dla "brak konta" i "złe hasło" - celowo, żeby nie zdradzać które adresy są zarejestrowane)
+- 429: `TooManyLoginAttemptsException` - 5 nieudanych prób blokuje konto na 15 minut
 - 200: `LoginResponse` (token, displayName)
 - Status: **zaimplementowane, przetestowane, działa na produkcji**
 
@@ -83,11 +84,15 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - **Backend:** `users` (id, display_name, email UNIQUE, password hashed), `books.user_id` (FK, NOT NULL od V5). `POST /register` (hashowanie przez `PasswordEncoder`), `POST /login` (zwraca JWT). `JwtService` (jjwt 0.13.0, HMAC, userId jako subject, ważność 24h), `JwtAuthFilter` (`OncePerRequestFilter`, czyta `Bearer <token>`, ustawia `SecurityContextHolder`). `SecurityConfig`: `httpBasic`/`InMemoryUserDetailsManager` usunięte, `addFilterBefore(jwtAuthFilter, ...)`, `/register`/`/login` `permitAll`, reszta `authenticated()`
 - **Izolacja danych:** `userId` wyciągany server-side przez `@AuthenticationPrincipal Long userId` (nigdy z ciała żądania) i wymagany w **każdej** metodzie `BookRepository`/`BookService`/`BookController`. `UPDATE`/`DELETE` filtrowane przez `id AND user_id` - próba modyfikacji cudzej książki po zgadniętym `id` zwraca 404, nie 403 (baza po prostu nie znajduje pasującego wiersza)
 - **ISBN unikalny per-user**, nie globalnie (`UNIQUE(user_id, isbn)`, migracja V4) - różni userzy mogą mieć tę samą książkę
-- **Frontend:** `AuthService` (HTTP-based `login`/`register`, `token`/`displayName` signals w `sessionStorage`), interceptor wysyła `Authorization: Bearer <token>`, `LoginForm` (email/hasło + obsługa błędu), `RegisterForm` (nowy, emituje `registered` po sukcesie), przycisk wylogowania w nagłówku
+- **Frontend:** `AuthService` (HTTP-based `login`/`register`, `token`/`displayName` signals w `sessionStorage`), interceptor wysyła `Authorization: Bearer <token>` **i przechwytuje 401** - wygasły token czyści sesję, co automatycznie przerzuca `App` na ekran logowania. Żądania bez tokenu pomijają tę logikę, więc nieudane logowanie pokazuje własny komunikat zamiast wylogowywać. `LoginForm` (email/hasło + komunikat z backendu), `RegisterForm`, przycisk wylogowania w nagłówku
+- **401 zamiast 403:** Spring Security bez `AuthenticationEntryPoint` odpowiada domyślnie **403** na żądania nieuwierzytelnione. Semantycznie błędne (403 = "zalogowany, ale bez uprawnień") i uniemożliwiało frontendowi rozpoznanie wygasłego tokenu. Naprawione przez `HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)`
+- **Rate limit logowania:** `LoginRateLimiter` - 5 nieudanych prób blokuje konto na 15 minut, udane logowanie kasuje licznik. Kluczowane po **znormalizowanym emailu**, nie po IP: zagrożeniem jest zgadywanie hasła do konkretnego konta, a klucz emailowy nie da się obejść zmianą adresu, nie wymaga zaufania nagłówkom proxy i działa tak samo lokalnie (bez nginx). Zablokowane konto jest odrzucane **przed** dotknięciem bazy. Licznik w pamięci - restart aplikacji go czyści
 - Status: **w pełni zaimplementowane, przetestowane end-to-end lokalnie i na produkcji**
 
 ### Wyszukiwanie zewnętrzne - BN Data + Google Books
-- **BN Data (`BnDataService`)** - główne źródło, `https://data.bn.org.pl/api/institutions/bibs.json`. Bez klucza API, bez limitów, bez blokad regionalnych. Czyste wartości brane z bloku `marc` (`100$a` autor główny, `245$a` tytuł, `020$a` ISBN, `260$b` wydawca), nie z płaskich pól - te są sklejone (autor + wydawca + współtwórcy, tytuł + podtytuł + seria). Filtr `language=polski` w zapytaniu **oraz** własny filtr po polu `language`. Dopasowanie autora po **wszystkich tokenach** zapytania w `100$a`, dzięki czemu `"Andrzej Sapkowski"` znajduje `"Sapkowski, Andrzej"`, a pozycje, gdzie autor napisał tylko przedmowę (pole `700`), odpadają
+- **BN Data (`BnDataService`)** - główne źródło, `https://data.bn.org.pl/api/institutions/bibs.json`. Bez klucza API, bez limitów, bez blokad regionalnych. Czyste wartości brane z bloku `marc` (`100$a` autor główny, `245$a` tytuł, `245$n` numer tomu, `020$a` ISBN, `260$b` wydawca), nie z płaskich pól - te są sklejone (autor + wydawca + współtwórcy, tytuł + podtytuł + seria). Filtr `language=polski` w zapytaniu **oraz** własny filtr po polu `language`. Dopasowanie autora po **wszystkich tokenach** zapytania w `100$a`, dzięki czemu `"Andrzej Sapkowski"` znajduje `"Sapkowski, Andrzej"`, a pozycje, gdzie autor napisał tylko przedmowę (pole `700`), odpadają
+- **Tomy i wydania:** `245$n` doklejany do tytułu, więc "Galeony Wojny T. 1" i "T. 2" są rozróżnialne (wcześniej wyglądały na duplikaty i kolidowały ze sobą przy dodawaniu). Wyniki deduplikowane po tytule - zostaje **najstarsze wydanie**, bo kilkanaście wydań tego samego tytułu zajmowało cały limit i wypychało inne książki autora. Limit (50 pozycji ze 100 pobranych) stosowany **po** deduplikacji, więc liczy różne tytuły
+- **Świadomy kompromis:** przy deduplikacji ISBN pochodzi z pierwszego wydania, niekoniecznie z egzemplarza na półce. Akceptowalne, bo roku i wydawcy i tak nie zapisujemy - służą tylko do rozróżnienia wydań na ekranie wyboru
 - **Google Books (`GoogleBooksService`)** - drugie źródło, dla wydań obcojęzycznych. Wymaga `GOOGLE_BOOKS_API_KEY` (bez klucza dzielony, bardzo niski limit anonimowy). Ma okładki, których BN nie ma
 - **Znane ograniczenie Google Books:** wyniki są dobierane według regionu adresu IP żądania. Z serwera Oracle zapytanie o Sapkowskiego zwraca katalog niemiecki (18 `de`, 1 `en`, 1 `pt-BR`, zero `pl`) - ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. Stąd BN Data jako źródło domyślne
 - Status: **zaimplementowane, wdrożone, działa na produkcji**
@@ -191,24 +196,24 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [x] Bezpieczne, dwuetapowe wdrożenie na produkcję - 68/68 istniejących książek przypisanych do konta bez utraty danych
 
 ## Backlog / Techniczne
-- [ ] **Testy dla `searchBooks`/`countBySearch`** (fragment w tytule/autorze, case-insensitive, brak wyników, zgodność count z wynikami, znaki `%`/`_` w zapytaniu) - **priorytet**, brak tych testów pozwolił incydentowi #6 przeleżeć tygodnie na produkcji
-- [ ] Testy `JwtService` (generowanie, ekstrakcja `userId`, token wygasły i z błędnym podpisem)
-- [ ] Testy izolacji multi-tenant (user A nie może odczytać/edytować/usunąć książki usera B)
-- [ ] Testy logowania (`UserServiceImpl.login`: błędne hasło, nieistniejący email)
+- [x] Testy dla `searchBooks`/`countBySearch` (fragment w tytule/autorze, case-insensitive, brak wyników, zgodność count z wynikami, izolacja per-user, regresja na wildcardy `%`/`_`)
+- [x] Testy `JwtService` (round trip, token wygasły, podpisany innym sekretem, zmanipulowany, śmieci zamiast tokenu)
+- [x] Testy logowania (`UserServiceImplTest`: nieistniejący email, błędne hasło, sukces, hasło nigdy nie trafia do repozytorium jawnym tekstem, konto zablokowane nie dotyka bazy)
+- [x] Usuwanie: stan "w trakcie" (wyłączony przycisk + "Usuwanie...") i obsługa błędu
+- [ ] Testy izolacji multi-tenant na poziomie **serwisu** - świadomie **odrzucone**: `BookServiceImpl` tylko przekazuje `userId`, więc taki test asertowałby na mockach. Realną izolację wymusza SQL i pokrywa `BookRepositoryImplTest` na prawdziwej bazie
 - [ ] `IsbnValidatorTest` - przepisać na Mockito, jeśli dodane zostaną dynamiczne komunikaty błędów
 - [ ] PATCH: rozróżnienie "pole pominięte" vs "pole = null" (np. `JsonNullable`) - dopiero jeśli pojawi się potrzeba
 - [ ] `GlobalExceptionHandler`: rozszerzyć o kolejne przypadki, jeśli się pojawią
 - [ ] Ujednolicić konwencję nazewnictwa metod serwis/repo (obecnie niespójne: część metod dodaje jawne "Book"/"Books" w serwisie, część nie)
-- [ ] Usuwanie: dodać stan "w trakcie" (sygnał `deletingId`, wyłączony przycisk "Tak, usuń" + tekst "Usuwanie...") i obsługę błędu przy nieudanym `deleteBook` (obecnie `onDelete` nie ma `error:` w subscribe - brak informacji dla usera przy niepowodzeniu)
 
-## Backlog / Otwarte znaleziska z drugiego code review
-- [ ] `.headers().disable()` w `SecurityConfig` - wyłącza **wszystkie** domyślne nagłówki bezpieczeństwa; relikt po H2 Console, której już nie ma. Zawęzić albo włączyć z powrotem
-- [ ] Brak obsługi 401 na froncie - wygasły token (24h) kończy się cichą awarią zamiast przekierowaniem na logowanie
-- [ ] Błędy PATCH/DELETE połykane do `console.error` - user nie widzi, że operacja się nie powiodła
-- [ ] `DataIntegrityViolationException` zawsze mapowany na 409 "duplikat", niezależnie od faktycznej przyczyny naruszenia
-- [ ] `secret.getBytes()` w `JwtService` bez jawnego UTF-8 - zależne od domyślnego kodowania platformy
-- [ ] Brak rate limitu na `/login`
-- [ ] Filtrowanie autora po stronie klienta dla Google Books (`inauthor:` jest nieprecyzyjne - zwraca np. książki, do których autor napisał tylko wstęp). BN Data ma to już zrobione
+## Znaleziska z drugiego code review - zamknięte ✅ (2026-09-02)
+- [x] `.headers().disable()` usunięte - relikt po H2 Console; domyślne nagłówki (`X-Frame-Options`, `X-Content-Type-Options`, `Cache-Control`) wróciły
+- [x] Obsługa 401 na froncie - interceptor czyści sesję i przerzuca na ekran logowania; backend zwraca 401 zamiast domyślnego 403
+- [x] Błędy PATCH/DELETE widoczne w UI zamiast `console.error`
+- [x] `DuplicateKeyException` zamiast szerokiego `DataIntegrityViolationException` - naruszenie klucza obcego czy `NOT NULL` nie udaje już "duplikatu", tylko trafia do ogólnej obsługi z pełnym stack trace w logach
+- [x] `secret.getBytes(StandardCharsets.UTF_8)` w `JwtService`
+- [x] Rate limit na `/login`
+- [ ] Filtrowanie autora po stronie klienta dla Google Books (`inauthor:` jest nieprecyzyjne - zwraca np. książki, do których autor napisał tylko wstęp). BN Data ma to już zrobione, więc dotyczy tylko drugorzędnego źródła
 
 ## Poprawki UI - zrobione ✅ (2026-08-07)
 - [x] Wyszukiwanie po tytule/autorze (backend: `search` param + frontend: pasek w `App`, live filtering, przycisk czyszczenia)
@@ -227,7 +232,6 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [x] `coverUrl` przeprowadzony przez cały stos (V6, model, DTO, mapper, SQL, frontend)
 
 ## Następny krok
-- [ ] Priorytet: brakujące testy (Backlog / Techniczne, zwłaszcza `searchBooks`)
-- [ ] Otwarte znaleziska z drugiego code review
-- [ ] Nowa funkcja z Backlog / Model Book
+- [ ] Nowa funkcja z Backlog / Model Book (dateAdded, tagi, favorite)
+- [ ] Albo pozycja z Backlog / Techniczne / Deployment (healthcheck MariaDB, CI/CD)
 
