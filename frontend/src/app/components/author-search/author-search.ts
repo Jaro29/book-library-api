@@ -24,8 +24,6 @@ export class AuthorSearch {
   summary = signal<string | null>(null);
   error = signal<string | null>(null);
 
-  source = this.useBnData() ? 'bn' : 'google';
-
   onSearch(event: Event) {
     event.preventDefault();
     const source = this.useBnData() ? 'bn' : 'google';

@@ -1,5 +1,6 @@
 package pl.jaro.restapiworkshop.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -31,9 +32,15 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request){
-        User user = userService.login(request.email(),request.password());
+    public ResponseEntity<LoginResponse> login(@RequestBody @Valid LoginRequest request,
+                                               HttpServletRequest httpRequest) {
+        User user = userService.login(request.email(), request.password(), clientIp(httpRequest));
         LoginResponse response = new LoginResponse(jwtService.generateToken(user.getId()), user.getDisplayName());
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    private String clientIp(HttpServletRequest request) {
+        String forwarded = request.getHeader("X-Real-IP");
+        return (forwarded != null && !forwarded.isBlank()) ? forwarded.trim() : request.getRemoteAddr();
     }
 }

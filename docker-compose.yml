@@ -24,7 +24,10 @@ services:
       GOOGLE_BOOKS_API_KEY: ${GOOGLE_BOOKS_API_KEY}
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        NGINX_CONF: ${NGINX_CONF:-nginx.conf}
     restart: unless-stopped
     depends_on:
       - backend

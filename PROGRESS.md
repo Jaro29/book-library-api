@@ -21,7 +21,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 ### POST /login
 - Request: `LoginRequest` (email, password)
 - 401: `InvalidCredentialsException` (ten sam komunikat dla "brak konta" i "złe hasło" - celowo, żeby nie zdradzać które adresy są zarejestrowane)
-- 429: `TooManyLoginAttemptsException` - 5 nieudanych prób blokuje konto na 15 minut
+- 429: `TooManyLoginAttemptsException` - 5 nieudanych prób z tego samego IP na to konto, albo 20 z dowolnych źródeł, w oknie 15 minut
 - 200: `LoginResponse` (token, displayName)
 - Status: **zaimplementowane, przetestowane, działa na produkcji**
 
@@ -65,7 +65,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - Status: **zaimplementowane, działa na produkcji**
 
 ### CORS
-- Przeniesione z `WebMvcConfigurer` (`WebConfig`, usunięty) do `CorsConfigurationSource` bean w `SecurityConfig` - Spring Security musi znać CORS **przed** swoim filtrem, inaczej blokuje nawet poprawne żądania
+- Przeniesione z `WebMvcConfigurer` do `CorsConfigurationSource` bean w `SecurityConfig` - Spring Security musi znać CORS **przed** swoim filtrem, inaczej blokuje nawet poprawne żądania. Plik `WebConfig` **istnieje nadal**, ale konfiguruje już wyłącznie kodowanie UTF-8 dla `StringHttpMessageConverter`
 - `allowedOrigins`: `http://localhost:4200`, `https://afterword.coffe.ink`, metody GET/POST/PATCH/DELETE
 - Status: **skonfigurowane i zgodne z produkcją**
 
@@ -90,7 +90,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - **ISBN unikalny per-user**, nie globalnie (`UNIQUE(user_id, isbn)`, migracja V4) - różni userzy mogą mieć tę samą książkę
 - **Frontend:** `AuthService` (HTTP-based `login`/`register`, `token`/`displayName` signals w `sessionStorage`), interceptor wysyła `Authorization: Bearer <token>` **i przechwytuje 401** - wygasły token czyści sesję, co automatycznie przerzuca `App` na ekran logowania. Żądania bez tokenu pomijają tę logikę, więc nieudane logowanie pokazuje własny komunikat zamiast wylogowywać. `LoginForm` (email/hasło + komunikat z backendu), `RegisterForm`, przycisk wylogowania w nagłówku
 - **401 zamiast 403:** Spring Security bez `AuthenticationEntryPoint` odpowiada domyślnie **403** na żądania nieuwierzytelnione. Semantycznie błędne (403 = "zalogowany, ale bez uprawnień") i uniemożliwiało frontendowi rozpoznanie wygasłego tokenu. Naprawione przez `HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)`
-- **Rate limit logowania:** `LoginRateLimiter` - 5 nieudanych prób blokuje konto na 15 minut, udane logowanie kasuje licznik. Kluczowane po **znormalizowanym emailu**, nie po IP: zagrożeniem jest zgadywanie hasła do konkretnego konta, a klucz emailowy nie da się obejść zmianą adresu, nie wymaga zaufania nagłówkom proxy i działa tak samo lokalnie (bez nginx). Zablokowane konto jest odrzucane **przed** dotknięciem bazy. Licznik w pamięci - restart aplikacji go czyści
+- **Rate limit logowania:** `LoginRateLimiter` - dwie warstwy: **5 prób na parę email + IP** (blokuje zgadywanie z jednego źródła, nie pozwalając obcemu odciąć właściciela od konta) oraz **20 prób na sam email** (łapie atak rozproszony). Udane logowanie kasuje oba liczniki. Zablokowane konto jest odrzucane **przed** dotknięciem bazy. Mapa w pamięci, ograniczona LRU do 10 000 kluczy - restart aplikacji czyści blokady. IP z nagłówka `X-Real-IP`, fallback na `getRemoteAddr()`
 - Status: **w pełni zaimplementowane, przetestowane end-to-end lokalnie i na produkcji**
 
 ### Wyszukiwanie zewnętrzne - BN Data + Google Books
@@ -179,7 +179,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 
 ## Backlog / Migracje bazy danych
 - [x] Flyway wdrożony, `V1__create_books_table.sql`
-- [x] `V2__create_users_table.sql`, `V3__add_user_id_to_books.sql` (nullable na start), `V4__make_isbn_unique_per_user.sql`, `V5__make_user_id_not_null.sql`, `V6__add_cover_url_to_books.sql` - wszystkie zweryfikowane na lokalnej i produkcyjnej MariaDB
+- [x] `V2__create_users_table.sql`, `V3__add_user_id_to_books.sql` (nullable na start), `V4__make_isbn_unique_per_user.sql`, `V5__make_user_id_not_null.sql`, `V6__add_cover_url_to_books.sql`, `V7__add_books_user_id_index.sql` - wszystkie zweryfikowane na lokalnej i produkcyjnej MariaDB
 - [x] **Wzorzec bezpiecznego wdrożenia migracji łamiącej istniejące dane:** gdy nowa kolumna musi być `NOT NULL`, a stare wiersze nie mają wartości - migracja `NOT NULL` idzie **osobno, po** wdrożeniu nullable wersji i **ręcznym backfillu** danych (`UPDATE ... WHERE ... IS NULL`), nie razem z pierwszym wdrożeniem
 - [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
 
@@ -234,6 +234,24 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [x] `GoogleBooksService` - klucz API, filtr języka po stronie klienta, bezpieczny fallback na pustą listę
 - [x] `AuthorSearch` - panel z checkboxami, wsadowe dodawanie, karty bibliograficzne (rok + wydawca) przy braku okładki
 - [x] `coverUrl` przeprowadzony przez cały stos (V6, model, DTO, mapper, SQL, frontend)
+
+## Trzeci code review - zamknięte ✅ (2026-09-02)
+- [x] **`npm test` nie kompilował się** (`TS2741`) - `sampleBook` w `edit-book-form.spec.ts` nie miał pola `coverUrl`, dodanego przy migracji V6. Cały zestaw testów frontendu był przez to martwy
+- [x] **`GET /books/suggestions` zwracał 500 zamiast 400** - `ResponseStatusException` wpadało w ogólny `@ExceptionHandler(Exception.class)`, dodany później niż sam endpoint. Regresja wprowadzona przy okazji "globalnego fallbacku"; naprawiona dedykowanym handlerem `ResponseStatusException` **przed** ogólnym
+- [x] **Rate limiter jako wektor DoS** - poprzednia wersja kluczowała wyłącznie po emailu, więc dowolna osoba mogła zablokować cudze konto na kwadrans, znając sam adres. Przebudowany na dwie warstwy (email+IP oraz sam email z wyższym progiem)
+- [x] **Rate limiter nie ograniczał pamięci** - `purgeIfTooLarge` usuwało tylko wpisy **wygasłe**, więc szybki atak słownikowy po tysiącach adresów rozdymał mapę bez ograniczeń, a każde kolejne żądanie skanowało całość. Zastąpione mapą LRU o stałym suficie
+- [x] **Email zapisywany bez normalizacji** - `create()` wstawiało surową wartość, a `findByEmail` szukało po `trim().toLowerCase()`. Rejestracja z przypadkową spacją (łatwe na telefonie) odcinała od konta **na zawsze**. Normalizacja przeniesiona do serwisu, jedno miejsce dla rejestracji i logowania
+- [x] **Martwa właściwość `source`** w `AuthorSearch` - liczona raz przy tworzeniu komponentu, nieużywana, sugerująca reaktywność, której nie było
+- [x] **Wyścig w wyszukiwarce** - każde naciśnięcie klawisza wysyłało osobne żądanie, a wolniejsza odpowiedź na krótszy prefiks mogła nadpisać świeższy wynik. Dodane `debounceTime(300)`, `distinctUntilChanged()` i `switchMap`
+- [x] **Brak obsługi błędu w `loadBooks`** - awaria sieci kończyła się cichą pustą listą. Dodany sygnał `loadError` i komunikat nad listą
+- [x] **`nginx.conf` uniemożliwiał lokalny `docker compose up`** - wymuszał HTTPS i certyfikaty produkcyjne. Dodany `nginx.dev.conf`, wybierany przez `ARG NGINX_CONF` w `Dockerfile` i zmienną `NGINX_CONF` w compose
+- [x] **Brak indeksu pod listowanie** - `WHERE user_id = ? ORDER BY id` robiło `filesort`, bo jedyny pasujący indeks to `(user_id, isbn)`. Migracja V7 dodaje `(user_id, id)`
+- [x] **Nagłówki proxy** - nginx przekazuje teraz także `X-Forwarded-For` i `X-Forwarded-Proto`
+- [x] **Cztery rozbieżności dokumentacji** - nieprawdziwa deklaracja `OnPush`, przestarzały `isbn UNIQUE` w tabeli, zdanie o "usuniętym" `WebConfig`, niewykonalna Opcja B w README
+
+### Świadomie **nieprzyjęte** z tego review
+- **`@Transactional` jako lek na wyścig przy duplikatach** - transakcja w `READ COMMITTED` **nie zapobiega** temu scenariuszowi: oba wątki i tak przeczytają "nie ma duplikatu" i oba wstawią. Jedyne realne rozwiązanie to ograniczenie `UNIQUE(user_id, title, author)` w bazie, którego **celowo** nie chcemy (dwa wydania tej samej książki bywają pożądane). Problem realny, rekomendacja myląca
+- **Testcontainers** - sensowne, ale ma wartość dopiero przy CI/CD, którego jeszcze nie ma. Dołożyłoby zależność i czas startu testów bez dzisiejszego zysku
 
 ## Następny krok
 - [ ] Nowa funkcja z Backlog / Model Book (dateAdded, tagi, favorite)

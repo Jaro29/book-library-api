@@ -47,7 +47,8 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 - [x] CORS w `SecurityConfig` (`CorsConfigurationSource` bean)
 - [x] Frontend: `AuthService`, `LoginForm`, `RegisterForm`, interceptor z `Bearer <token>`
 - [x] Produkcyjne dane (68 książek) bezpiecznie zmigrowane do modelu multi-user, zero strat
-- [x] Rate limit logowania (5 prób / 15 minut na konto). **Licznik żyje w pamięci aplikacji** - `docker compose up -d --build backend` kasuje wszystkie blokady, a przy skalowaniu na wiele instancji każda liczyłaby osobno. Przy jednej instancji bez znaczenia; przy więcej niż jednej trzeba by współdzielonego magazynu (Redis)
+- [x] Rate limit logowania (5 prób na parę email+IP, 20 na sam email, okno 15 minut). **Licznik żyje w pamięci aplikacji** - `docker compose up -d --build backend` kasuje wszystkie blokady, a przy skalowaniu na wiele instancji każda liczyłaby osobno. Przy jednej instancji bez znaczenia; przy więcej niż jednej trzeba by współdzielonego magazynu (Redis)
+- [x] Adres IP klienta pobierany z nagłówka `X-Real-IP` ustawianego przez nginx - **rate limit działa poprawnie tylko za proxy**. Przy bezpośrednim wystawieniu backendu wszyscy użytkownicy wyglądaliby jak jeden adres
 
 ### Wyszukiwanie zewnętrzne ✅
 - [x] BN Data (`data.bn.org.pl`) jako główne źródło - bez klucza API, bez limitów, bez blokad regionalnych, więc **nie wymaga żadnej konfiguracji na serwerze**

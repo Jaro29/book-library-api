@@ -71,7 +71,9 @@ ISBN jest unikalny **per-user** (`UNIQUE(user_id, isbn)`), nie globalnie - róż
 
 **Wygasły token:** żądanie z nieważnym tokenem dostaje **401** (przez `HttpStatusEntryPoint`, bo Spring Security domyślnie odpowiada 403, co semantycznie znaczy co innego). Interceptor po stronie frontendu przechwytuje 401, czyści sesję i przerzuca użytkownika na ekran logowania, zamiast pozwolić aplikacji cicho przestać działać.
 
-**Ochrona przed zgadywaniem hasła:** pięć nieudanych logowań blokuje **konto** na piętnaście minut; udane logowanie kasuje licznik. Kluczem jest email, nie adres IP - zagrożeniem jest zgadywanie hasła do konkretnego konta, a klucz emailowy nie da się obejść zmianą adresu i nie wymaga zaufania nagłówkom proxy. Licznik żyje w pamięci aplikacji, co przy jednej instancji w zupełności wystarcza.
+**Ochrona przed zgadywaniem hasła:** licznik nieudanych logowań działa w dwóch warstwach. **Pięć prób na parę email + adres IP** blokuje zgadywanie z jednego źródła, ale nie pozwala obcemu odciąć właściciela od własnego konta. **Dwadzieścia prób na sam email** łapie atak rozproszony po wielu adresach - próg jest na tyle wysoki, że zwykłe pomyłki go nie osiągają. Udane logowanie kasuje oba liczniki. Adres IP pochodzi z nagłówka `X-Real-IP` ustawianego przez nginx, z powrotem do `getRemoteAddr()` przy uruchomieniu bez proxy.
+
+Licznik żyje w pamięci aplikacji, w mapie o stałym, ograniczonym rozmiarze (LRU, 10 000 kluczy) - atak słownikowy po tysiącach różnych adresów wypycha najstarsze wpisy zamiast rozdymać stertę. Restart aplikacji czyści wszystkie blokady, a przy wielu instancjach każda liczyłaby osobno.
 
 ## Wyszukiwanie w zewnętrznych katalogach
 
@@ -127,7 +129,7 @@ Trzy osobne wyjątki domenowe, bez znajomości HTTP - `GlobalExceptionHandler` (
 | `ConstraintViolationException` | 400 | `page`/`pageSize` poza dozwolonym zakresem |
 | `EmailAlreadyExistsException` | 409 | Email już zarejestrowany |
 | `InvalidCredentialsException` | 401 | Błędny email lub hasło (celowo ten sam komunikat dla obu przypadków) |
-| `TooManyLoginAttemptsException` | 429 | Pięć nieudanych logowań na to samo konto w ciągu 15 minut |
+| `TooManyLoginAttemptsException` | 429 | Pięć nieudanych logowań z tego samego IP na to konto, albo dwadzieścia z dowolnych źródeł, w ciągu 15 minut |
 | Walidacja `@Valid`/`@NotBlank`/`ValidIsbn` | 400 | Nieprawidłowy kształt danych w body żądania |
 | `ApiException` | 500 | Nieoczekiwana awaria infrastruktury (baza padła, itp.) - **jedyny** przypadek 500 w tym API |
 
@@ -140,7 +142,7 @@ Bazowy URL: `/` (dev: `http://localhost:8080`, prod: przez nginx `/api`)
 | Metoda | Ścieżka | Opis |
 |---|---|---|
 | `POST` | `/register` | Rejestracja (displayName, email, hasło min. 8 znaków) |
-| `POST` | `/login` | Logowanie, zwraca JWT. 429 po pięciu nieudanych próbach na konto |
+| `POST` | `/login` | Logowanie, zwraca JWT. 429 po przekroczeniu limitu nieudanych prób |
 | `POST` | `/books?allowDuplicate=false` | Tworzy książkę. 409 przy duplikacie, chyba że `allowDuplicate=true` |
 | `GET` | `/books/{id}` | Pobiera jedną książkę |
 | `GET` | `/books?page=0&pageSize=20` | Lista paginowana (`pageSize` max 100), opcjonalny `search` |
@@ -158,13 +160,13 @@ Tabela `books` (schemat: `backend/src/main/resources/db/migration/V1__create_boo
 |---|---|---|
 | `id` | `BIGINT AUTO_INCREMENT` | Klucz główny |
 | `title`, `author` | `VARCHAR(255) NOT NULL` | Wymagane |
-| `isbn` | `VARCHAR(20) UNIQUE` | Opcjonalne, walidowane checksumą (ISBN-10/13) gdy podane |
+| `isbn` | `VARCHAR(20)` | Opcjonalne, walidowane checksumą (ISBN-10/13) gdy podane. Unikalne **per-user** (`UNIQUE(user_id, isbn)`, migracja V4), nie globalnie |
 | `status` | `VARCHAR(20) NOT NULL` | `TO_READ`, `READING`, `FINISHED` |
 | `start_date`, `finish_date` | `DATE` | Oba opcjonalne, niezależnie od statusu |
 | `times_read` | `INT NOT NULL DEFAULT 0` | Liczba przeczytań |
 | `notes` | `TEXT` | Opcjonalne |
 | `cover_url` | `VARCHAR(500)` | Opcjonalne, URL okładki (z Google Books; BN Data nie ma okładek). Trzymany jako URL, nie plik |
-| `user_id` | `BIGINT NOT NULL` | FK do `users.id` |
+| `user_id` | `BIGINT NOT NULL` | FK do `users.id`. Indeks `(user_id, id)` (migracja V7) obsługuje filtrowanie i sortowanie w listowaniu bez `filesort` |
 
 Tabela `users`:
 
@@ -186,7 +188,8 @@ Tabela `users`:
 - **Stan współdzielony przez `BookService`** (nie przez każdy komponent osobno) - sygnały `books`, `currentPage`, `totalPages` żyją w jednym miejscu, komponenty je **czytają**, serwis jest jedynym, który je **zmienia**. Dzięki temu np. dodanie książki w `AddBookForm` automatycznie odświeża listę w `BookList`, bez ręcznej synchronizacji.
 - **Komunikacja rodzic-dziecko:** `input.required<T>()` / `output<void>()` (nowoczesny odpowiednik `@Input`/`@Output` w Angularze 22) - używane przez `EditBookForm` osadzony w wierszach `BookList`.
 - **Formularze:** Signal Forms (`form()`, `FormField`, `required()`, `min()` z `@angular/forms/signals`) - nie klasyczne Reactive Forms.
-- **Zmiana wykrywania (change detection):** nowe komponenty domyślnie `OnPush` - stan **musi** być trzymany w `signal()`, zwykłe przypisanie pola nie odświeży widoku.
+- **Zmiana wykrywania (change detection):** komponenty działają w domyślnym trybie `Default`. Stan i tak trzymany jest w `signal()`, więc przejście na `OnPush` byłoby bezpieczne - pozycja w backlogu, nie zrobione
+- **Wyszukiwanie:** wpisywanie w pasek przechodzi przez `debounceTime(300)` i `distinctUntilChanged()`, a same żądania przez `switchMap` - dzięki temu jedno słowo to jedno zapytanie, a odpowiedź na wcześniejszy, wolniejszy prefiks nie nadpisuje świeższych wyników
 
 ## Uruchomienie lokalnie
 
@@ -221,10 +224,12 @@ Aplikacja dostępna pod `http://localhost:4200`, API pod `http://localhost:8080`
 ### Opcja B - przez Docker Compose (weryfikacja konfiguracji produkcyjnej)
 
 ```bash
-docker compose up --build
+NGINX_CONF=nginx.dev.conf docker compose up --build mariadb backend frontend
 ```
 
 Aplikacja dostępna pod `http://localhost` (port 80), backend i baza osiągalne tylko wewnątrz sieci Compose. Wymaga pliku `.env` w korzeniu repo (patrz sekcja niżej) - plik **nie** jest w repo, trzeba go stworzyć ręcznie.
+
+**Dlaczego `NGINX_CONF` i wybrane serwisy:** domyślny `nginx.conf` jest produkcyjny - wymusza przekierowanie na HTTPS i ładuje certyfikaty Let's Encrypt dla `afterword.coffe.ink`, których lokalnie nie ma, więc kontener nie wstanie. `nginx.dev.conf` serwuje czyste HTTP na porcie 80. Serwisy `certbot` są pomijane jawnym wskazaniem trzech pozostałych, bo lokalnie nie mają czego odnawiać.
 
 ## Zmienne środowiskowe (`.env`, wymagany dla Docker Compose)
 

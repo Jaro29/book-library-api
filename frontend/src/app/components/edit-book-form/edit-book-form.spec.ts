@@ -16,6 +16,7 @@ describe('EditBookForm', () => {
     finishDate: null,
     timesRead: 0,
     notes: null,
+    coverUrl: null,
   };
 
   beforeEach(async () => {
