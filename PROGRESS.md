@@ -70,7 +70,11 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - Status: **skonfigurowane i zgodne z produkcją**
 
 ### Frontend - UI
-- `BookList`: lista + paginacja, wyszukiwanie (pasek w `App`, dzielony przez `bookService.searchQuery`), delete inline z dwuetapowym potwierdzeniem, edit inline (`EditBookForm`)
+- **Strona powitalna** (przed zalogowaniem): dwie kolumny - branding (nazwa AfterWord, opis, trzy punkty, notka o fleuronie) i karta z formularzem. Poniżej 860px składa się do jednej kolumny. Wcześniej był tam sam, nieostylowany formularz przyklejony do lewej górnej krawędzi, bez żadnego brandingu
+- **Motyw graficzny: fleuron** (❦, drukarski ornament roślinny) - znaczniki listy i notka na stronie powitalnej, pod nagłówkiem aplikacji, w pustym stanie listy, na końcu ostatniej strony katalogu (jak ornament kończący rozdział), oraz jako favicon. Świadomie **nie** przy każdej książce ani w przyciskach - ornament działa, dopóki jest rzadki
+- **Style formularzy logowania i rejestracji** w globalnym `styles.css` (klasa `.auth-form`) - oba mają identyczną strukturę, więc dublowanie w dwóch plikach komponentów nie miałoby sensu. Wcześniej `login-form.css` był **pusty**, przez co etykiety nigdy nie dostały stylu
+- **Puste stany listy** z dwoma wariantami treści: inna dla pustej biblioteki (zachęta do dodania), inna dla wyszukiwania bez wyników. Paginacja **znika** przy zerowych wynikach zamiast pokazywać "Strona 1 z 0"
+- `BookList`: lista + paginacja (20 pozycji na stronę), wyszukiwanie (pasek w `App`, dzielony przez `bookService.searchQuery`), delete inline z dwuetapowym potwierdzeniem i stanem "Usuwanie...", edit inline (`EditBookForm`)
 - `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól, obsługa 409 i ogólnych błędów 400 (`generalError`), domyślny status `FINISHED`/`timesRead=1`
 - Status wyświetlany jako kolorowa plakietka (`color-mix()` z istniejących zmiennych CSS), akcje edit/delete jako ikony SVG (`stroke=currentColor`, bez dodatkowej biblioteki)
 - Formularz dodawania zwijany (`App.showAddForm` signal), pasek wyszukiwania + przycisk "Dodaj" w jednym wierszu

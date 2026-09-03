@@ -40,6 +40,14 @@ flowchart TD
 
 **Kluczowa decyzja:** tylko `frontend` (nginx) ma wystawiony port na zewnątrz. `backend` i `mariadb` są osiągalne wyłącznie wewnątrz sieci Docker Compose - nikt z internetu nie łączy się z nimi bezpośrednio. Frontend rozmawia z `/api/*`, a nginx po cichu przekierowuje to do `backend:8080` przez wewnętrzny DNS Compose (nazwa serwisu = nazwa hosta).
 
+## Interfejs
+
+Motyw ciemnej biblioteki: `--color-ink` jako tło, `--color-marigold` jako akcent, `--color-sage` i `--color-ember` dla stanów, typografia Fraunces (nagłówki), Lora (tekst) i IBM Plex Mono (etykiety, przyciski, dane techniczne).
+
+Motywem przewodnim jest **fleuron** (❦) - drukarski ornament roślinny, którym od XVI wieku oddzielano sekcje w książkach. Pojawia się na stronie powitalnej, pod nagłówkiem, w pustym stanie listy, na końcu ostatniej strony katalogu i jako favicon - ale celowo **nie** przy każdej książce ani w przyciskach, bo ornament działa tylko dopóki jest rzadki.
+
+Przed zalogowaniem widoczna jest strona powitalna: branding i opis po jednej stronie, formularz po drugiej, składające się do jednej kolumny na wąskich ekranach.
+
 ## Struktura warstw backendu
 Controller → Service → Repository → baza danych
 - **Controller** - mapowanie HTTP ↔ DTO, walidacja kształtu danych (`@Valid`, `@Min`). Nie zawiera logiki biznesowej.
@@ -105,6 +113,7 @@ Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
 - **Spring Boot 4.x używa Jacksona 3** - pakiet `tools.jackson.databind`, nie `com.fasterxml.jackson.databind`. Kod z importem z Jacksona 2 **skompiluje się**, ale wywali się w runtime na `Type definition error`, bo `RestClient` deserializuje przez Jacksona 3
 - **`ESCAPE '\\'` w Javowym text blocku rozbija zapytanie w MariaDB** - do SQL trafia `ESCAPE '\'`, a MariaDB traktuje backslash jako znak ucieczki wewnątrz literałów, więc widzi niedomknięty string. Użyć znaku, który nie ma specjalnego znaczenia w żadnej warstwie (tu: `ESCAPE '!'`)
 - **`StringHttpMessageConverter` ignoruje `CharacterEncodingFilter`** - ma własne pole `defaultCharset` (historycznie `ISO-8859-1`) i pisze bajty bezpośrednio do strumienia. Polskie znaki w komunikatach błędów wymagają jawnego wymuszenia UTF-8 przez `WebMvcConfigurer.configureMessageConverters`. `MockMvc` w trybie `standaloneSetup` **nie dziedziczy** tej konfiguracji - trzeba ją podać osobno przez `.setMessageConverters(...)`
+- **Znak tekstowy w SVG renderuje się czcionką systemową** - fleuron w `favicon.svg` wygląda inaczej w podglądzie IntelliJ niż w przeglądarce, bo każdy program dobiera inny font. Na innych systemach może wyglądać jeszcze inaczej. Pełną kontrolę dałoby narysowanie ornamentu jako ścieżki wektorowej zamiast tekstu - świadomie odłożone
 
 ## Obsługa błędów
 
