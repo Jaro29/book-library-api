@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { EditBookForm } from './edit-book-form';
 import { Book } from '../../models/book';
@@ -16,11 +18,13 @@ describe('EditBookForm', () => {
     finishDate: null,
     timesRead: 0,
     notes: null,
+    coverUrl: null,
   };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EditBookForm],
+      providers: [provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditBookForm);

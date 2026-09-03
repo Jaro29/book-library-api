@@ -1,28 +1,28 @@
 <form class="edit-form" (submit)="onSubmit($event)">
   <div class="field">
-    <label>Tytuł</label>
-    <input type="text" [formField]="bookForm.title" />
+    <label for="edit-title">Tytuł</label>
+    <input id="edit-title" type="text" [formField]="bookForm.title" />
     @if (bookForm.title().touched() && bookForm.title().invalid()) {
       <span class="field-error">{{ bookForm.title().errors()[0].message }}</span>
     }
   </div>
 
   <div class="field">
-    <label>Autor</label>
-    <input type="text" [formField]="bookForm.author" />
+    <label for="edit-author">Autor</label>
+    <input id="edit-author" type="text" [formField]="bookForm.author" />
     @if (bookForm.author().touched() && bookForm.author().invalid()) {
       <span class="field-error">{{ bookForm.author().errors()[0].message }}</span>
     }
   </div>
 
   <div class="field">
-    <label>ISBN</label>
-    <input type="text" [formField]="bookForm.isbn" />
+    <label for="edit-isbn">ISBN</label>
+    <input id="edit-isbn" type="text" [formField]="bookForm.isbn" />
   </div>
 
   <div class="field">
-    <label>Status</label>
-    <select [formField]="bookForm.status">
+    <label for="edit-status">Status</label>
+    <select id="edit-status" [formField]="bookForm.status">
       <option value="TO_READ">Do przeczytania</option>
       <option value="READING">W trakcie</option>
       <option value="FINISHED">Przeczytana</option>
@@ -30,26 +30,26 @@
   </div>
 
   <div class="field">
-    <label>Rozpoczęto</label>
-    <input type="date" [formField]="bookForm.startDate" />
+    <label for="edit-start-date">Rozpoczęto</label>
+    <input id="edit-start-date" type="date" [formField]="bookForm.startDate" />
   </div>
 
   <div class="field">
-    <label>Zakończono</label>
-    <input type="date" [formField]="bookForm.finishDate" />
+    <label for="edit-finish-date">Zakończono</label>
+    <input id="edit-finish-date" type="date" [formField]="bookForm.finishDate" />
   </div>
 
   <div class="field">
-  <label>Liczba przeczytań</label>
-  <input type="number" [formField]="bookForm.timesRead" />
+  <label for="edit-times-read">Liczba przeczytań</label>
+  <input id="edit-times-read" type="number" [formField]="bookForm.timesRead" />
   @if (bookForm.timesRead().touched() && bookForm.timesRead().invalid()) {
     <span class="field-error">{{ bookForm.timesRead().errors()[0].message }}</span>
   }
 </div>
 
   <div class="field field-wide">
-    <label>Notatki</label>
-    <textarea [formField]="bookForm.notes"></textarea>
+    <label for="edit-notes">Notatki</label>
+    <textarea id="edit-notes" [formField]="bookForm.notes"></textarea>
   </div>
 
   <div class="field-wide edit-actions">

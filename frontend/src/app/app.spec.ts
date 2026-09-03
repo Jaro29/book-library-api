@@ -17,10 +17,11 @@ describe('App', () => {
     expect(app).toBeTruthy();
   });
 
-  it('should render title', async () => {
+  it('should render the landing page for a signed out visitor', async () => {
     const fixture = TestBed.createComponent(App);
     await fixture.whenStable();
     const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain('Biblioteczka');
+    expect(compiled.querySelector('h1')?.textContent).toContain('AfterWord');
+    expect(compiled.querySelector('app-login-form')).toBeTruthy();
   });
 });

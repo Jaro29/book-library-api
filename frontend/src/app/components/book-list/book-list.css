@@ -84,6 +84,17 @@
   line-height: 1;
   color: var(--color-spine);
 }
+
+.load-error {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--color-ember);
+  border-radius: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--color-ember);
+}
 .book-times-read {
   font-family: var(--font-mono);
   font-size: 0.75rem;

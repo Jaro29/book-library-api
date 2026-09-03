@@ -28,6 +28,8 @@ import static pl.jaro.restapiworkshop.query.UserQuery.*;
 @Slf4j
 public class UserRepositoryImpl implements UserRepository {
 
+    private static final UserRowMapper ROW_MAPPER = new UserRowMapper();
+
     private final NamedParameterJdbcTemplate jdbc;
 
     @Override
@@ -63,7 +65,7 @@ public class UserRepositoryImpl implements UserRepository {
                 User user = jdbc.queryForObject(
                         SELECT_USER_BY_EMAIL_QUERY,
                         of("email", email.trim().toLowerCase()),
-                        new UserRowMapper()
+                        ROW_MAPPER
                 );
                 return Optional.ofNullable(user);
             } catch (EmptyResultDataAccessException exception) {

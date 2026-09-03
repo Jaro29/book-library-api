@@ -3,6 +3,10 @@
     <h2>Lista książek</h2>
   </div>
 
+  @if (bookService.loadError()) {
+  <p class="load-error">{{ bookService.loadError() }}</p>
+  }
+
   <ul class="book-rows">
     @for (book of books(); track book.id) {
     <li class="book-row" [attr.data-status]="book.status">
@@ -67,7 +71,7 @@
     }
   </ul>
 
-  @if (books().length === 0) {
+  @if (books().length === 0 && !bookService.loadError()) {
   <div class="empty-state">
     <p class="empty-ornament" aria-hidden="true">❦</p>
     @if (bookService.searchQuery()) {

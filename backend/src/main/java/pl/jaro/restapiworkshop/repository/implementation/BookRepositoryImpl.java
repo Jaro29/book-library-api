@@ -30,6 +30,8 @@ import static pl.jaro.restapiworkshop.query.BookQuery.*;
 @Slf4j
 public class BookRepositoryImpl implements BookRepository, BookSearchRepository {
 
+    private static final BookRowMapper ROW_MAPPER = new BookRowMapper();
+
     private final NamedParameterJdbcTemplate jdbc;
 
     @Override
@@ -70,7 +72,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     @Override
     public Collection<Book> findAll(int page, int pageSize, Long userId) {
         return execute(() -> jdbc.query(SELECT_ALL_BOOKS_QUERY,
-                getPaginationParameters(page, pageSize).addValue("userId", userId), new BookRowMapper()));
+                getPaginationParameters(page, pageSize).addValue("userId", userId), ROW_MAPPER));
     }
 
     @Override
@@ -85,7 +87,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     public Book findById(Long id, Long userId) {
         return execute(() -> {
             try {
-                return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id, "userId", userId), new BookRowMapper());
+                return jdbc.queryForObject(SELECT_BOOK_BY_ID_QUERY, of("id", id, "userId", userId), ROW_MAPPER);
             } catch (EmptyResultDataAccessException exception) {
                 throw new BookNotFoundException("Nie znaleziono książki id: " + id);
             }
@@ -121,7 +123,7 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("search", toLikePattern(search))
                     .addValue("userId", userId);
-            return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY, params, new BookRowMapper());
+            return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY, params, ROW_MAPPER);
         });
     }
 

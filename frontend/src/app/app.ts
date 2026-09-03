@@ -27,13 +27,11 @@ export class App {
   protected authService = inject(AuthService);
 
   onSearch(query: string) {
-    this.bookService.searchQuery.set(query);
-    this.bookService.loadBooks();
+    this.bookService.search(query);
   }
 
   clearSearch() {
-    this.bookService.searchQuery.set('');
-    this.bookService.loadBooks();
+    this.bookService.clearSearch();
   }
 
   toggleAddForm() {

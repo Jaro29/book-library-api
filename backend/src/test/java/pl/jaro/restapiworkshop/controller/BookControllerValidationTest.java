@@ -68,6 +68,13 @@ class BookControllerValidationTest {
     }
 
     @Test
+    void shouldReturn400WhenSuggestionsCalledWithoutTitleAndAuthor() throws Exception {
+        mockMvc.perform(get("/books/suggestions"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Podaj tytuł lub autora do wyszukania.")));
+    }
+
+    @Test
     void shouldReturn500WithGenericMessageOnUnexpectedException() throws Exception {
         when(bookService.findBookById(anyLong(), anyLong()))
                 .thenThrow(new RuntimeException("coś nieoczekiwanego, np. NPE w mapperze"));

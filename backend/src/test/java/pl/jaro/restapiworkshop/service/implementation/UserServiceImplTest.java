@@ -24,6 +24,7 @@ import static org.mockito.Mockito.*;
 class UserServiceImplTest {
 
     private static final String EMAIL = "jaro@example.com";
+    private static final String CLIENT_IP = "127.0.0.1";
     private static final String RAW_PASSWORD = "tajnehaslo123";
     private static final String HASHED_PASSWORD = "$2a$10$zahaszowane";
 
@@ -50,6 +51,17 @@ class UserServiceImplTest {
     }
 
     @Test
+    void shouldNormaliseEmailBeforeStoringUser() {
+        when(userRepository.existsByEmail(EMAIL)).thenReturn(false);
+        when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(HASHED_PASSWORD);
+        when(userRepository.create(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        User created = userService.registerUser("Jaro", "  JARO@Example.COM ", RAW_PASSWORD);
+
+        assertThat(created.getEmail()).isEqualTo(EMAIL);
+    }
+
+    @Test
     void shouldNeverStoreRawPassword() {
         when(userRepository.existsByEmail(EMAIL)).thenReturn(false);
         when(passwordEncoder.encode(RAW_PASSWORD)).thenReturn(HASHED_PASSWORD);
@@ -66,9 +78,9 @@ class UserServiceImplTest {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
         assertThrows(InvalidCredentialsException.class,
-                () -> userService.login(EMAIL, RAW_PASSWORD));
+                () -> userService.login(EMAIL, RAW_PASSWORD, CLIENT_IP));
 
-        verify(loginRateLimiter).recordFailure(EMAIL);
+        verify(loginRateLimiter).recordFailure(EMAIL, CLIENT_IP);
     }
 
     @Test
@@ -77,9 +89,9 @@ class UserServiceImplTest {
         when(passwordEncoder.matches("zle-haslo", HASHED_PASSWORD)).thenReturn(false);
 
         assertThrows(InvalidCredentialsException.class,
-                () -> userService.login(EMAIL, "zle-haslo"));
+                () -> userService.login(EMAIL, "zle-haslo", CLIENT_IP));
 
-        verify(loginRateLimiter).recordFailure(EMAIL);
+        verify(loginRateLimiter).recordFailure(EMAIL, CLIENT_IP);
     }
 
     @Test
@@ -87,21 +99,31 @@ class UserServiceImplTest {
         when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(sampleUser()));
         when(passwordEncoder.matches(RAW_PASSWORD, HASHED_PASSWORD)).thenReturn(true);
 
-        User loggedIn = userService.login(EMAIL, RAW_PASSWORD);
+        User loggedIn = userService.login(EMAIL, RAW_PASSWORD, CLIENT_IP);
 
         assertThat(loggedIn.getEmail()).isEqualTo(EMAIL);
         assertThat(loggedIn.getDisplayName()).isEqualTo("Jaro");
-        verify(loginRateLimiter).reset(EMAIL);
-        verify(loginRateLimiter, never()).recordFailure(EMAIL);
+        verify(loginRateLimiter).reset(EMAIL, CLIENT_IP);
+        verify(loginRateLimiter, never()).recordFailure(EMAIL, CLIENT_IP);
+    }
+
+    @Test
+    void shouldNormaliseEmailBeforeLogin() {
+        when(userRepository.findByEmail(EMAIL)).thenReturn(Optional.of(sampleUser()));
+        when(passwordEncoder.matches(RAW_PASSWORD, HASHED_PASSWORD)).thenReturn(true);
+
+        userService.login("  JARO@Example.COM ", RAW_PASSWORD, CLIENT_IP);
+
+        verify(userRepository).findByEmail(EMAIL);
     }
 
     @Test
     void shouldNotEvenTouchTheDatabaseWhenAccountIsRateLimited() {
         doThrow(new TooManyLoginAttemptsException("Zbyt wiele prób."))
-                .when(loginRateLimiter).checkNotBlocked(EMAIL);
+                .when(loginRateLimiter).checkNotBlocked(EMAIL, CLIENT_IP);
 
         assertThrows(TooManyLoginAttemptsException.class,
-                () -> userService.login(EMAIL, RAW_PASSWORD));
+                () -> userService.login(EMAIL, RAW_PASSWORD, CLIENT_IP));
 
         verify(userRepository, never()).findByEmail(any());
     }
