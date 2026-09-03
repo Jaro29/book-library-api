@@ -10,6 +10,24 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 
 ---
 
+## Jak prowadzimy dalszy rozwój (praca z asystentem AI)
+
+Ten plik jest **punktem wejścia** do projektu. Nowa rozmowa powinna zaczynać się od: "projekt AfterWord w `~/IdeaProjects/rest-api-workshop`, przeczytaj `PROGRESS.md`, dziś robimy X" - i nic więcej. Cała historia decyzji jest tutaj, więc nie trzeba jej odtwarzać w rozmowie.
+
+**Jedna rozmowa = jeden temat.** Osobna sesja na funkcję, osobna na wygląd, osobna na wdrożenie. Powodów są dwa: koszt kontekstu rośnie z długością rozmowy (każda wymiana przetwarza **całą** dotychczasową historię, więc pod koniec długiej sesji nawet krótkie pytanie jest drogie), a długie sesje sprzyjają gubieniu wątków - w jednej z nich poprawka `ESCAPE` rozbiła wyszukiwanie i nikt tego nie zauważył przez tygodnie.
+
+**Duże dokumenty do pliku, nie do rozmowy.** Code review, specyfikacje, długie analizy - zapisać w repo i poprosić o przeczytanie. Wklejone do rozmowy ciążą do jej końca; wczytane z pliku trafiają do kontekstu raz.
+
+**Krótkie wyniki poleceń.** Z testów wystarczą ostatnie linie podsumowania albo samo "green". Z Dockera `--tail=20`. Z `curl` zwracającego listę - `| jq 'length'` albo `| head`, jeśli chodzi tylko o potwierdzenie, że działa.
+
+**Odczyt plików na żądanie, nie na zapas.** Asystent czyta plik wtedy, gdy ma go edytować albo gdy treść jest niezbędna do decyzji - nie "po cztery naraz na wszelki wypadek". Każdy odczytany plik zostaje w kontekście do końca rozmowy.
+
+**Konwencje projektu w osobnym pliku.** Nazewnictwo gałęzi, format commitów, wzorce nazw metod w repozytorium i serwisie oraz praca z `gh` - w `CONVENTIONS.md`.
+
+**Dokumentacja na koniec każdego etapu.** Jeśli `PROGRESS.md` przestanie odpowiadać kodowi, powyższy sposób pracy przestaje działać - nowa rozmowa startowałaby z fałszywym obrazem projektu. Trzeci code review znalazł cztery takie rozbieżności naraz.
+
+---
+
 ## Kontrakty endpointów (źródło prawdy dla API)
 
 ### POST /register
@@ -95,7 +113,8 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 
 ### Wyszukiwanie zewnętrzne - BN Data + Google Books
 - **BN Data (`BnDataService`)** - główne źródło, `https://data.bn.org.pl/api/institutions/bibs.json`. Bez klucza API, bez limitów, bez blokad regionalnych. Czyste wartości brane z bloku `marc` (`100$a` autor główny, `245$a` tytuł, `245$n` numer tomu, `020$a` ISBN, `260$b` wydawca), nie z płaskich pól - te są sklejone (autor + wydawca + współtwórcy, tytuł + podtytuł + seria). Filtr `language=polski` w zapytaniu **oraz** własny filtr po polu `language`. Dopasowanie autora po **wszystkich tokenach** zapytania w `100$a`, dzięki czemu `"Andrzej Sapkowski"` znajduje `"Sapkowski, Andrzej"`, a pozycje, gdzie autor napisał tylko przedmowę (pole `700`), odpadają
-- **Tomy i wydania:** `245$n` doklejany do tytułu, więc "Galeony Wojny T. 1" i "T. 2" są rozróżnialne (wcześniej wyglądały na duplikaty i kolidowały ze sobą przy dodawaniu). Wyniki deduplikowane po tytule - zostaje **najstarsze wydanie**, bo kilkanaście wydań tego samego tytułu zajmowało cały limit i wypychało inne książki autora. Limit (50 pozycji ze 100 pobranych) stosowany **po** deduplikacji, więc liczy różne tytuły
+- **Tomy i wydania:** `245$n` doklejany do tytułu, więc "Galeony Wojny T. 1" i "T. 2" są rozróżnialne (wcześniej wyglądały na duplikaty i kolidowały ze sobą przy dodawaniu). Wyniki deduplikowane po tytule - zostaje **najstarsze wydanie**, bo kilkanaście wydań tego samego tytułu zajmowało cały limit i wypychało inne książki autora. Limit (200 tytułów) stosowany **po** deduplikacji, więc liczy różne tytuły
+- **Stronicowanie (2026-09-03):** BN oddaje wyniki stronami i podaje `nextPage` w odpowiedzi. Wcześniej brana była tylko pierwsza strona (dla Harry'ego Harrisona 74 rekordy), więc autorzy z większym dorobkiem byli ucinani. Teraz idziemy za `nextPage` do 5 stron po 100 rekordów, kolejne URL-e wywoływane przez `URI.create` (już zakodowane - `uriBuilder` kodowałby je drugi raz). Górny limit stron chroni przed długim wiszeniem zapytania. Błąd w trakcie stronicowania nie kasuje wyników - oddajemy to, co zebrano do tej pory, i logujemy `WARN`. Kontrola: Harrison 50 tytułów, King 140
 - **Świadomy kompromis:** przy deduplikacji ISBN pochodzi z pierwszego wydania, niekoniecznie z egzemplarza na półce. Akceptowalne, bo roku i wydawcy i tak nie zapisujemy - służą tylko do rozróżnienia wydań na ekranie wyboru
 - **Google Books (`GoogleBooksService`)** - drugie źródło, dla wydań obcojęzycznych. Wymaga `GOOGLE_BOOKS_API_KEY` (bez klucza dzielony, bardzo niski limit anonimowy). Ma okładki, których BN nie ma
 - **Znane ograniczenie Google Books:** wyniki są dobierane według regionu adresu IP żądania. Z serwera Oracle zapytanie o Sapkowskiego zwraca katalog niemiecki (18 `de`, 1 `en`, 1 `pt-BR`, zero `pl`) - ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. Stąd BN Data jako źródło domyślne
@@ -234,6 +253,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 - [x] `GoogleBooksService` - klucz API, filtr języka po stronie klienta, bezpieczny fallback na pustą listę
 - [x] `AuthorSearch` - panel z checkboxami, wsadowe dodawanie, karty bibliograficzne (rok + wydawca) przy braku okładki
 - [x] `coverUrl` przeprowadzony przez cały stos (V6, model, DTO, mapper, SQL, frontend)
+- [x] Stronicowanie wyników BN przez `nextPage` (2026-09-03)
 
 ## Trzeci code review - zamknięte ✅ (2026-09-02)
 - [x] **`npm test` nie kompilował się** (`TS2741`) - `sampleBook` w `edit-book-form.spec.ts` nie miał pola `coverUrl`, dodanego przy migracji V6. Cały zestaw testów frontendu był przez to martwy

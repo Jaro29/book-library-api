@@ -7,6 +7,7 @@ import org.springframework.web.client.RestClient;
 import pl.jaro.restapiworkshop.dto.BookSuggestion;
 import tools.jackson.databind.JsonNode;
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -19,8 +20,9 @@ import java.util.regex.Pattern;
 @Slf4j
 public class BnDataService {
 
-    private static final int FETCH_LIMIT = 100;
-    private static final int MAX_RESULTS = 50;
+    private static final int PAGE_LIMIT = 100;
+    private static final int MAX_PAGES = 5;
+    private static final int MAX_RESULTS = 200;
     private static final Pattern YEAR_PATTERN = Pattern.compile("\\d{4}");
 
     private final RestClient restClient;
@@ -39,12 +41,13 @@ public class BnDataService {
     }
 
     public List<BookSuggestion> search(String title, String author) {
+        Map<String, BookSuggestion> oldestByTitle = new LinkedHashMap<>();
         try {
             JsonNode response = restClient.get()
                     .uri(uriBuilder -> {
                         uriBuilder.queryParam("kind", "książka")
                                 .queryParam("language", "polski")
-                                .queryParam("limit", FETCH_LIMIT);
+                                .queryParam("limit", PAGE_LIMIT);
                         if (title != null && !title.isBlank()) {
                             uriBuilder.queryParam("title", title.trim());
                         }
@@ -56,17 +59,30 @@ public class BnDataService {
                     .retrieve()
                     .body(JsonNode.class);
 
-            return mapToSuggestions(response, author);
+            int page = 1;
+            while (response != null) {
+                collectSuggestions(response, author, oldestByTitle);
+
+                String nextPage = response.path("nextPage").asString(null);
+                if (nextPage == null || nextPage.isBlank() || page >= MAX_PAGES) {
+                    break;
+                }
+                page++;
+                response = restClient.get()
+                        .uri(URI.create(nextPage))
+                        .retrieve()
+                        .body(JsonNode.class);
+            }
         } catch (Exception exception) {
-            log.warn("Nie udało się pobrać wyników z BN Data: {}", exception.getMessage());
-            return List.of();
+            log.warn("Nie udało się pobrać wszystkich wyników z BN Data: {}", exception.getMessage());
         }
+
+        return oldestByTitle.values().stream().limit(MAX_RESULTS).toList();
     }
 
-    private List<BookSuggestion> mapToSuggestions(JsonNode response, String requestedAuthor) {
-        Map<String, BookSuggestion> oldestByTitle = new LinkedHashMap<>();
-        if (response == null || !response.has("bibs")) {
-            return List.of();
+    private void collectSuggestions(JsonNode response, String requestedAuthor, Map<String, BookSuggestion> oldestByTitle) {
+        if (!response.has("bibs")) {
+            return;
         }
 
         for (JsonNode bib : response.get("bibs")) {
@@ -101,8 +117,6 @@ public class BnDataService {
 
             oldestByTitle.merge(bookTitle.toLowerCase(), suggestion, this::olderEdition);
         }
-
-        return oldestByTitle.values().stream().limit(MAX_RESULTS).toList();
     }
 
     private BookSuggestion olderEdition(BookSuggestion current, BookSuggestion candidate) {
