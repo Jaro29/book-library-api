@@ -1,4 +1,4 @@
-import { Component, inject, output, signal } from '@angular/core';
+import { Component, computed, inject, output, signal } from '@angular/core';
 import { catchError, forkJoin, of } from 'rxjs';
 import { BookService } from '../../services/book';
 import { BookSuggestion } from '../../models/book-suggestion';
@@ -15,8 +15,6 @@ export class AuthorSearch {
   closed = output<void>();
 
   author = signal('');
-  useBnData = signal(true);
-  resultsSource = signal<'bn' | 'google'>('bn');
   results = signal<BookSuggestion[]>([]);
   selectedIndexes = signal<Set<number>>(new Set());
   searching = signal(false);
@@ -24,18 +22,38 @@ export class AuthorSearch {
   summary = signal<string | null>(null);
   error = signal<string | null>(null);
 
+  readonly pageSize = 20;
+  page = signal(0);
+
+  pageCount = computed(() => Math.ceil(this.results().length / this.pageSize));
+
+  pageResults = computed(() =>
+    this.results().slice(this.page() * this.pageSize, (this.page() + 1) * this.pageSize),
+  );
+
+  nextPage() {
+    if (this.page() + 1 < this.pageCount()) {
+      this.page.update((current) => current + 1);
+    }
+  }
+
+  prevPage() {
+    if (this.page() > 0) {
+      this.page.update((current) => current - 1);
+    }
+  }
+
   onSearch(event: Event) {
     event.preventDefault();
-    const source = this.useBnData() ? 'bn' : 'google';
     this.searching.set(true);
     this.error.set(null);
     this.summary.set(null);
 
-    this.bookService.searchSuggestions(this.author(), source).subscribe({
+    this.bookService.searchSuggestions(this.author()).subscribe({
       next: (suggestions) => {
         this.results.set(suggestions);
-        this.resultsSource.set(source);
         this.selectedIndexes.set(new Set());
+        this.page.set(0);
         this.searching.set(false);
       },
       error: () => {
