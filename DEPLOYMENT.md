@@ -52,7 +52,7 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 
 ### Wyszukiwanie zewnętrzne ✅
 - [x] BN Data (`data.bn.org.pl`) jako główne źródło - bez klucza API, bez limitów, bez blokad regionalnych, więc **nie wymaga żadnej konfiguracji na serwerze**
-- [x] Google Books usunięte (2026-09-04) - zwracało z tego serwera katalog niemiecki, więc było bezużyteczne. `GOOGLE_BOOKS_API_KEY` **można usunąć z produkcyjnego `.env`**, a sam klucz unieważnić w Google Cloud Console
+- [x] Google Books usunięte (2026-09-04) - zwracało z tego serwera katalog niemiecki, więc było bezużyteczne. `GOOGLE_BOOKS_API_KEY` usunięty z produkcyjnego `.env`, a sam klucz unieważniony w Google Cloud Console
 - [x] BN Data ma timeout 3s i zwraca pustą listę przy awarii - niedostępność zewnętrznego katalogu nigdy nie psuje aplikacji
 
 ## Lokalne środowisko deweloperskie

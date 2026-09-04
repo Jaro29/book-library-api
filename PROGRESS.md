@@ -118,6 +118,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - **Świadomy kompromis:** przy deduplikacji ISBN pochodzi z pierwszego wydania, niekoniecznie z egzemplarza na półce. Akceptowalne, bo roku i wydawcy i tak nie zapisujemy - służą tylko do rozróżnienia wydań na ekranie wyboru
 - **Stronicowanie wyników w UI (2026-09-04):** panel pokazuje 20 kart na stronę, po tyle samo co lista książek. Pełna lista (do 200 tytułów, ~30 KB JSON) zostaje w pamięci komponentu, strony to wycinek przez `computed` - **zero dodatkowych żądań do backendu**. Zaznaczenia przeżywają zmianę strony i licznik "Dodaj zaznaczone (N)" liczy je ze wszystkich stron. `selectedIndexes` trzyma indeksy w pełnej tablicy, więc szablon przelicza `$index` z wycinka na globalny (`@let globalIndex = page() * pageSize + $index`) - bez tego zaznaczenia skakałyby między stronami. Pasek paginacji pojawia się dopiero od dwóch stron
 - **Google Books - USUNIĘTE (2026-09-04).** Było drugim źródłem, dla wydań obcojęzycznych i okładek. Wyniki dobierane według regionu adresu IP żądania: z serwera Oracle (Niemcy) zapytanie o Sapkowskiego zwracało katalog niemiecki (18 `de`, 1 `en`, 1 `pt-BR`, zero `pl`), czego nie naprawiał ani `langRestrict=pl`, ani `country=PL`. Funkcja nie dawała nic poza kluczem API do utrzymania i drugą gałęzią w kodzie. Usunięte: `GoogleBooksService`, parametry `source`/`lang` w kontrolerze i w `book.ts`, checkbox wyboru źródła w `AuthorSearch`, `app.google-books` z `application.yaml`, `GOOGLE_BOOKS_API_KEY` z `docker-compose.yml`
+- **Sprzątanie po Google (2026-09-04):** `GOOGLE_BOOKS_API_KEY` usunięty z produkcyjnego `.env`, klucz unieważniony w Google Cloud Console
 - **`coverUrl` zostaje w całym stosie** (kolumna V6, DTO, mapper, renderowanie karty), mimo że nic go teraz nie wypełnia - nowe źródło okładek nie będzie wymagało migracji
 - Status: **zaimplementowane, wdrożone, działa na produkcji**
 ---
@@ -279,7 +280,6 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - **Testcontainers** - sensowne, ale ma wartość dopiero przy CI/CD, którego jeszcze nie ma. Dołożyłoby zależność i czas startu testów bez dzisiejszego zysku
 
 ## Następny krok
-- [ ] Usunąć `GOOGLE_BOOKS_API_KEY` z produkcyjnego `.env` i unieważnić klucz w Google Cloud Console
 - [ ] Nowa funkcja z Backlog / Model Book (dateAdded, tagi, favorite)
 - [ ] Albo pozycja z Backlog / Techniczne / Deployment (healthcheck MariaDB, CI/CD)
 
