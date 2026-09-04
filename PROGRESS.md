@@ -12,7 +12,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 
 ## Jak prowadzimy dalszy rozwój (praca z asystentem AI)
 
-Ten plik jest **punktem wejścia** do projektu. Nowa rozmowa powinna zaczynać się od: "projekt AfterWord w `~/IdeaProjects/rest-api-workshop`, przeczytaj `PROGRESS.md`, dziś robimy X" - i nic więcej. Cała historia decyzji jest tutaj, więc nie trzeba jej odtwarzać w rozmowie.
+Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady współpracy (styl pracy, konwencje, workflow). Nowa rozmowa powinna zaczynać się od przeczytania obu.
 
 **Jedna rozmowa = jeden temat.** Osobna sesja na funkcję, osobna na wygląd, osobna na wdrożenie. Powodów są dwa: koszt kontekstu rośnie z długością rozmowy (każda wymiana przetwarza **całą** dotychczasową historię, więc pod koniec długiej sesji nawet krótkie pytanie jest drogie), a długie sesje sprzyjają gubieniu wątków - w jednej z nich poprawka `ESCAPE` rozbiła wyszukiwanie i nikt tego nie zauważył przez tygodnie.
 

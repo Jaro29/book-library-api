@@ -1,6 +1,6 @@
 # CONVENTIONS.md - konwencje projektu AfterWord
 
-Spisane po fakcie, na podstawie tego, co faktycznie stosowaliśmy przez cały projekt. Nie jest to formalny standard branżowy, tylko nasz własny, spójny sposób pracy - i to jest jego zaletą: nie wymaga dodatkowej dyscypliny, bo już tak pracujemy.
+Spisane po fakcie, na podstawie tego, co faktycznie stosowane jest w projekcie od początku. Nie jest to formalny standard branżowy, tylko spójny zestaw reguł dopasowanych do skali projektu.
 
 ---
 
@@ -21,7 +21,7 @@ main → develop → <typ>/<opis>
 
 Krótki, opisowy slug w formie `<czasownik>-<rzeczownik>-<czego dotyczy>`: czasownik na początku (`add`, `fix`, `remove`), potem kontekst. Nazwa ma od razu mówić, co gałąź robi, bez czytania opisu PR-a - `fix/add-cors-production-origin` tłumaczy się sam.
 
-**Bez numeracji etapów.** Styl `etap-01`, `etap-02` (z projektu SAPER) został tu świadomie odrzucony: pracujemy iteracyjnie, funkcja po funkcji i endpoint po endpoincie, a nie według liniowego planu, więc numer etapu nic by nie znaczył.
+**Bez numeracji etapów.** Styl `etap-01`, `etap-02` został świadomie odrzucony: praca idzie iteracyjnie, funkcja po funkcji i endpoint po endpoincie, a nie według liniowego planu, więc numer etapu nic by nie znaczył.
 
 ---
 
@@ -54,7 +54,7 @@ Remove dead BookUpdateRequest DTO; complete shouldReturnZeroTotalPagesWhenNoElem
 
 ### Dlaczego nie Conventional Commits
 
-Dodałyby ustandaryzowane prefiksy pasujące do nazw gałęzi (`feature/` → `feat:`, `fix/` → `fix:`) i umożliwiły automatyczne generowanie changelogów. To jednak dodatkowa dyscyplina, której solo-projekt nie potrzebuje - obecny zapis jest czytelny i działa. Do rozważenia, gdyby pojawiło się CI/CD z automatycznym changelogiem.
+Dodałyby ustandaryzowane prefiksy pasujące do nazw gałęzi (`feature/` → `feat:`, `fix/` → `fix:`) i umożliwiły automatyczne generowanie changelogów. To jednak dodatkowa dyscyplina, której projekt jednoosobowy nie potrzebuje - obecny zapis jest czytelny i działa. Do rozważenia, gdyby pojawiło się CI/CD z automatycznym changelogiem.
 
 ---
 
@@ -85,6 +85,23 @@ Celowo **inaczej** niż w repozytorium: w kodzie wołającym (kontroler) widać 
 
 ---
 
+## Dokumentacja
+
+| Plik | Zawiera |
+|---|---|
+| `PROGRESS.md` | Stan projektu, kontrakty endpointów, historia incydentów, backlog |
+| `README.md` | Architektura, model danych, decyzje projektowe, troubleshooting |
+| `DEPLOYMENT.md` | Infrastruktura, procedury wdrożenia, zmienne środowiskowe |
+| `CONVENTIONS.md` | Ten plik - konwencje kodu i pracy z gitem |
+
+**Język:** dokumentacja po polsku, historia gita (tytuły i opisy commitów oraz PR-ów) po angielsku. Mieszanie języków w obrębie jednego commita jest niechlujne.
+
+**Bez długich myślników** (—) w plikach dokumentacji - tylko zwykłe (-).
+
+Dokumentacja aktualizowana jest na koniec każdego etapu, nie "kiedyś". Rozjazd dokumentacji z kodem był już w tym projekcie źródłem błędnych decyzji - trzeci przegląd kodu znalazł cztery takie rozbieżności naraz.
+
+---
+
 ## Praca z GitHubem (gh)
 
 PR zakładany z terminala, zawsze na `develop`:
@@ -102,3 +119,11 @@ gh pr merge --squash --delete-branch
 ```
 
 `--body` to miejsce na decyzje i świadome pominięcia (jak wyłączenie migracji V5 z powyższego PR-a) - to samo, czego szuka się potem w historii.
+
+**Uwaga praktyczna:** w treści `--title` i `--body` nie używać apostrofów - rozbijają parsowanie polecenia w shellu i zawieszają terminal w oczekiwaniu na domknięcie cudzysłowu.
+
+---
+
+## Praca w toku (WIP)
+
+Jeśli zmiana obejmuje backend i frontend, a skończona jest tylko jedna warstwa, praca ląduje na gałęzi z sufiksem `-wip`: commit i push **bez** merge do `develop`. Gałąź `develop` ma być zawsze w stanie spójnym i gotowym do wdrożenia - połowicznie zmigrowana funkcja (np. backend wymagający nowego formatu żądań, którego frontend jeszcze nie wysyła) zepsułaby działającą aplikację.
