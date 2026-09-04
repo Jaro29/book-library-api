@@ -140,3 +140,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   padding: 11px 14px;
   margin-top: 4px;
 }
+
+/* Paginacja - wspolna dla listy ksiazek i wynikow wyszukiwania w sieci */
+.pagination { display: flex; align-items: center; justify-content: center; gap: 16px; padding-top: 8px; }
+.pagination-label { font-family: var(--font-mono); font-size: 0.85rem; color: var(--color-parchment-muted); }

@@ -45,17 +45,19 @@
         {{ adding() ? 'Dodaję...' : 'Dodaj zaznaczone (' + selectedIndexes().size + ')' }}
       </button>
       <span class="results-source">
+        Znaleziono: {{ results().length }} &middot;
         Źródło: {{ resultsSource() === 'bn' ? 'Biblioteka Narodowa' : 'Google Books' }}
       </span>
     </div>
 
     <ul class="suggestion-list" [class.suggestion-list-compact]="resultsSource() === 'bn'">
-      @for (result of results(); track $index) {
+      @for (result of pageResults(); track $index) {
+        @let globalIndex = page() * pageSize + $index;
         <li class="suggestion-row" [class.suggestion-row-compact]="!result.coverUrl">
           <input
             type="checkbox"
-            [checked]="selectedIndexes().has($index)"
-            (change)="toggleSelected($index)"
+            [checked]="selectedIndexes().has(globalIndex)"
+            (change)="toggleSelected(globalIndex)"
           />
           @if (result.coverUrl) {
             <img [src]="result.coverUrl" [alt]="result.title" class="suggestion-cover" />
@@ -72,5 +74,22 @@
         </li>
       }
     </ul>
+
+    @if (pageCount() > 1) {
+      <div class="pagination">
+        <button type="button" class="btn" (click)="prevPage()" [disabled]="page() === 0">
+          &larr; Poprzednia
+        </button>
+        <span class="pagination-label">Strona {{ page() + 1 }} z {{ pageCount() }}</span>
+        <button
+          type="button"
+          class="btn"
+          (click)="nextPage()"
+          [disabled]="page() + 1 >= pageCount()"
+        >
+          Następna &rarr;
+        </button>
+      </div>
+    }
   }
 </div>
