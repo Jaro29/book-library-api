@@ -15,7 +15,6 @@ import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
 import pl.jaro.restapiworkshop.service.BnDataService;
 import pl.jaro.restapiworkshop.service.BookService;
-import pl.jaro.restapiworkshop.service.GoogleBooksService;
 
 import java.util.List;
 
@@ -24,7 +23,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class BookController {
     private final BookService bookService;
-    private final GoogleBooksService googleBooksService;
     private final BnDataService bnDataService;
 
     @PostMapping("/books")
@@ -71,9 +69,7 @@ public class BookController {
     @GetMapping("/books/suggestions")
     public ResponseEntity<List<BookSuggestion>> searchSuggestions(
             @RequestParam(required = false) String title,
-            @RequestParam(required = false) String author,
-            @RequestParam(required = false) String lang,
-            @RequestParam(defaultValue = "bn") String source) {
+            @RequestParam(required = false) String author) {
 
         boolean titleEmpty = title == null || title.isBlank();
         boolean authorEmpty = author == null || author.isBlank();
@@ -82,11 +78,7 @@ public class BookController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Podaj tytuł lub autora do wyszukania.");
         }
 
-        List<BookSuggestion> suggestions = "google".equals(source)
-                ? googleBooksService.search(title, author, lang)
-                : bnDataService.search(title, author);
-
-        return ResponseEntity.ok(suggestions);
+        return ResponseEntity.ok(bnDataService.search(title, author));
     }
 
     @PatchMapping("/books/{id}")

@@ -25,7 +25,7 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 
 ### Pełny stos ✅
 - [x] `docker-compose.yml`: `mariadb` (wolumen `mariadb-data`), `backend`, `frontend`, `certbot`, `certbot-renew`
-- [x] `.env` lokalny i produkcyjny - osobne, wygenerowane hasła (`openssl rand -base64 24`), zapisane w KeePassXC; zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`, `GOOGLE_BOOKS_API_KEY`
+- [x] `.env` lokalny i produkcyjny - osobne, wygenerowane hasła (`openssl rand -base64 24`), zapisane w KeePassXC; zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`
 
 ### Wdrożenie na serwer ✅
 - [x] `git clone` przez deploy key
@@ -52,8 +52,8 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 
 ### Wyszukiwanie zewnętrzne ✅
 - [x] BN Data (`data.bn.org.pl`) jako główne źródło - bez klucza API, bez limitów, bez blokad regionalnych, więc **nie wymaga żadnej konfiguracji na serwerze**
-- [x] Google Books jako drugie źródło - wymaga `GOOGLE_BOOKS_API_KEY` w `.env` (Google Cloud Console → Books API → klucz API, bez ograniczeń aplikacji, ograniczony do Books API)
-- [x] Oba źródła mają timeout 3s i zwracają pustą listę przy awarii - niedostępność zewnętrznego katalogu nigdy nie psuje aplikacji
+- [x] Google Books usunięte (2026-09-04) - zwracało z tego serwera katalog niemiecki, więc było bezużyteczne. `GOOGLE_BOOKS_API_KEY` **można usunąć z produkcyjnego `.env`**, a sam klucz unieważnić w Google Cloud Console
+- [x] BN Data ma timeout 3s i zwraca pustą listę przy awarii - niedostępność zewnętrznego katalogu nigdy nie psuje aplikacji
 
 ## Lokalne środowisko deweloperskie
 - Zamiast H2 (in-memory), lokalny development używa **trwałej** MariaDB w Dockerze (`dev-mariadb`, port 3307) - eliminuje powtarzające się niekompatybilności H2/MariaDB przy migracjach (składnia `ALTER TABLE`, nazwy tabel systemowych, automatyczne nazewnictwo ograniczeń)
