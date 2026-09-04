@@ -1,6 +1,6 @@
 <div class="author-search-panel">
   <div class="panel-header">
-    <h2>Szukaj po autorze w sieci</h2>
+    <h2>Szukaj w Bibliotece Narodowej</h2>
     <button type="button" class="btn btn-ghost" (click)="closed.emit()">Zamknij</button>
   </div>
 
@@ -11,14 +11,6 @@
       [value]="author()"
       (input)="author.set($any($event.target).value)"
     />
-    <label class="polish-only-toggle">
-      <input
-        type="checkbox"
-        [checked]="useBnData()"
-        (change)="useBnData.set($any($event.target).checked)"
-      />
-      Szukaj w polskiej bibliografii (BN)
-    </label>
     <button type="submit" class="btn btn-primary" [disabled]="searching()">
       {{ searching() ? 'Szukam...' : 'Szukaj' }}
     </button>
@@ -44,13 +36,10 @@
       >
         {{ adding() ? 'Dodaję...' : 'Dodaj zaznaczone (' + selectedIndexes().size + ')' }}
       </button>
-      <span class="results-source">
-        Znaleziono: {{ results().length }} &middot;
-        Źródło: {{ resultsSource() === 'bn' ? 'Biblioteka Narodowa' : 'Google Books' }}
-      </span>
+      <span class="results-source">Znaleziono: {{ results().length }}</span>
     </div>
 
-    <ul class="suggestion-list" [class.suggestion-list-compact]="resultsSource() === 'bn'">
+    <ul class="suggestion-list suggestion-list-compact">
       @for (result of pageResults(); track $index) {
         @let globalIndex = page() * pageSize + $index;
         <li class="suggestion-row" [class.suggestion-row-compact]="!result.coverUrl">
