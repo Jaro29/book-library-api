@@ -12,7 +12,7 @@ Osobisty katalog książek - aplikacja do śledzenia przeczytanych, czytanych i 
 | Migracje bazy | Flyway |
 | Baza danych | MariaDB (prod i dev - lokalna, trwała instancja przez Docker, patrz "Uruchomienie lokalnie") |
 | Autoryzacja | JWT (jjwt), Spring Security - rejestracja, logowanie, izolacja danych per-user |
-| Zewnętrzne katalogi | BN Data (Biblioteka Narodowa, główne źródło) + Google Books (wydania obcojęzyczne) |
+| Zewnętrzne katalogi | BN Data (Biblioteka Narodowa) |
 | Frontend | Angular 22, standalone components, Signal Forms, sygnały jako mechanizm stanu |
 | Szyfrowanie | HTTPS przez Let's Encrypt/Certbot (automatyczne odnawianie) |
 | Serwer statyczny / reverse proxy | nginx |
@@ -79,14 +79,9 @@ Licznik żyje w pamięci aplikacji, w mapie o stałym, ograniczonym rozmiarze (L
 
 Zamiast wpisywać dane książki ręcznie, można wyszukać autora w zewnętrznym katalogu, zaznaczyć checkboxami interesujące pozycje i dodać je wsadowo.
 
-**Dwa źródła, przełączane checkboxem:**
+**Jedno źródło: BN Data.** Najlepsze pokrycie polskich wydań, dane oficjalne, bez klucza API i limitów. Kosztem jest brak okładek i format MARC wymagający mapowania.
 
-| Źródło | Zalety | Wady |
-|---|---|---|
-| **BN Data** (domyślne) | Najlepsze pokrycie polskich wydań, dane oficjalne, bez klucza API i limitów | Brak okładek, format MARC wymaga mapowania |
-| **Google Books** | Okładki, dobre pokrycie nowości i wydań obcojęzycznych | Wymaga klucza API, wyniki zależne od regionu IP serwera |
-
-**Dlaczego BN Data jest domyślne:** Google Books dobiera wyniki według regionu adresu IP żądania. Z serwera produkcyjnego (Oracle, Niemcy) zapytanie o polskiego autora zwraca katalog niemiecki - zero polskich wydań, i ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. BN Data, jako polska instytucja hostująca dane dla polskich zbiorów, nie ma tego problemu.
+**Dlaczego Google Books zostało usunięte (2026-09-04):** było drugim źródłem, przełączanym checkboxem, do wydań obcojęzycznych i okładek. W praktyce zwracało z produkcji wyłącznie katalog niemiecki, więc dokładało klucz API i gałąź kodu bez żadnej wartości. Usunięte razem z parametrami `source` i `lang` w `/books/suggestions`. Powód, dla którego zawiodło, wart zapamiętania: Google Books dobiera wyniki według regionu adresu IP żądania. Z serwera produkcyjnego (Oracle, Niemcy) zapytanie o polskiego autora zwraca katalog niemiecki - zero polskich wydań, i ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. BN Data, jako polska instytucja hostująca dane dla polskich zbiorów, nie ma tego problemu.
 
 **Mapowanie MARC:** BN Data zwraca zarówno płaskie pola, jak i blok `marc`. Płaskie pola są sklejone (`author` łączy autora, wydawcę i współtwórców; `title` łączy tytuł, podtytuł i serię), więc czyste wartości brane są z MARC: `100$a` (autor główny), `245$a` (tytuł), `245$n` (numer tomu), `020$a` (ISBN), `260$b` (wydawca). Filtrowanie po `100$a` odrzuca też pozycje, w których szukany autor napisał jedynie przedmowę (pole `700`).
 
@@ -146,7 +141,7 @@ Bazowy URL: `/` (dev: `http://localhost:8080`, prod: przez nginx `/api`)
 | `POST` | `/books?allowDuplicate=false` | Tworzy książkę. 409 przy duplikacie, chyba że `allowDuplicate=true` |
 | `GET` | `/books/{id}` | Pobiera jedną książkę |
 | `GET` | `/books?page=0&pageSize=20` | Lista paginowana (`pageSize` max 100), opcjonalny `search` |
-| `GET` | `/books/suggestions?author=...&source=bn` | Podpowiedzi z zewnętrznego katalogu (`source`: `bn` domyślnie albo `google`) |
+| `GET` | `/books/suggestions?author=...` | Podpowiedzi z BN Data (`title` i/lub `author`, przynajmniej jeden wymagany) |
 | `PATCH` | `/books/{id}` | Częściowa aktualizacja - pola pominięte/`null` pozostają bez zmian |
 | `DELETE` | `/books/{id}` | Usuwa książkę, zwraca 204 |
 
@@ -165,7 +160,7 @@ Tabela `books` (schemat: `backend/src/main/resources/db/migration/V1__create_boo
 | `start_date`, `finish_date` | `DATE` | Oba opcjonalne, niezależnie od statusu |
 | `times_read` | `INT NOT NULL DEFAULT 0` | Liczba przeczytań |
 | `notes` | `TEXT` | Opcjonalne |
-| `cover_url` | `VARCHAR(500)` | Opcjonalne, URL okładki (z Google Books; BN Data nie ma okładek). Trzymany jako URL, nie plik |
+| `cover_url` | `VARCHAR(500)` | Opcjonalne, URL okładki. Trzymany jako URL, nie plik. Obecnie **nigdy niewypełniany** - BN Data okładek nie ma, a Google Books zostało usunięte. Kolumna i obsługa w całym stosie zostają, więc nowe źródło okładek nie wymagałoby migracji |
 | `user_id` | `BIGINT NOT NULL` | FK do `users.id`. Indeks `(user_id, id)` (migracja V7) obsługuje filtrowanie i sortowanie w listowaniu bez `filesort` |
 
 Tabela `users`:
@@ -240,7 +235,6 @@ Aplikacja dostępna pod `http://localhost` (port 80), backend i baza osiągalne 
 | `DB_USERNAME` | Użytkownik aplikacji do bazy |
 | `DB_PASSWORD` | Hasło użytkownika aplikacji |
 | `JWT_SECRET` | Tajny klucz do podpisywania tokenów (min. 256 bit) |
-| `GOOGLE_BOOKS_API_KEY` | Klucz do Google Books API (opcjonalny - bez niego działa niski, dzielony limit anonimowy; BN Data klucza nie wymaga) |
 
 `.env` jest w `.gitignore` - nigdy nie commitować prawdziwych haseł.
 
@@ -262,6 +256,5 @@ Uruchamianie na realnej MariaDB zamiast domyślnej wbudowanej H2 wynika z doświ
 Pełny, aktualny backlog - patrz `PROGRESS.md`. Skrótowo:
 - PATCH nie rozróżnia "pole pominięte" od "pole ustawione na `null`" (świadome uproszczenie)
 - Brak dodatkowych pól modelu (tagi, wydawca, seria, data dodania) - zaplanowane, nie zaimplementowane. Rok wydania i wydawca są **pobierane** z BN Data, ale tylko wyświetlane przy wyborze wydania, nie zapisywane
-- Wyszukiwanie w Google Books nie filtruje autora po stronie klienta, więc `inauthor:` bywa nieprecyzyjne. BN Data (źródło domyślne) ma to zrobione
 - Wdrożenie w pełni ręczne - CI/CD w backlogu
 - Deployment zakończony - aplikacja działa produkcyjnie pod https://afterword.coffe.ink (HTTPS, automatyczne odnawianie certyfikatu). Szczegóły w `DEPLOYMENT.md`

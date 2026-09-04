@@ -6,7 +6,7 @@ Frontend: pełny CRUD z UI (Angular 22, Signal Forms) + stylowanie + environment
 Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) ✅.
 **Deployment: KOMPLETNY - HTTPS, aplikacja żyje pod https://afterword.coffe.ink ✅**
 **Multi-user: KOMPLETNY - JWT, pełna izolacja danych per-user, wdrożone bezpiecznie na produkcji (68/68 książek zachowanych) ✅**
-**Wyszukiwanie zewnętrzne: KOMPLETNE - BN Data (główne źródło) + Google Books (dla wydań obcojęzycznych), wsadowe dodawanie z zaznaczaniem ✅**
+**Wyszukiwanie zewnętrzne: KOMPLETNE - BN Data jako jedyne źródło, wyniki stronicowane po 20, wsadowe dodawanie z zaznaczaniem ✅**
 
 ---
 
@@ -75,7 +75,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - Status: **zaimplementowane, zmergowane**
 
 ### GET /books/suggestions (podpowiedzi z zewnętrznych katalogów)
-- Query params: `author` i/lub `title` (przynajmniej jeden wymagany), `source` (`bn` domyślnie, albo `google`), `lang` (używany tylko przy `source=google`)
+- Query params: `author` i/lub `title` (przynajmniej jeden wymagany). Parametry `source` i `lang` **usunięte 2026-09-04** razem z Google Books
 - 400: `ResponseStatusException`, gdy ani `title` ani `author` nie podano
 - 200: `List<BookSuggestion>` (title, author, isbn, coverUrl, publicationYear, publisher)
 - Wymaga zalogowania (jak reszta `/books/*`) - żeby nie robić z API darmowego proxy do zewnętrznych katalogów
@@ -115,10 +115,10 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - **BN Data (`BnDataService`)** - główne źródło, `https://data.bn.org.pl/api/institutions/bibs.json`. Bez klucza API, bez limitów, bez blokad regionalnych. Czyste wartości brane z bloku `marc` (`100$a` autor główny, `245$a` tytuł, `245$n` numer tomu, `020$a` ISBN, `260$b` wydawca), nie z płaskich pól - te są sklejone (autor + wydawca + współtwórcy, tytuł + podtytuł + seria). Filtr `language=polski` w zapytaniu **oraz** własny filtr po polu `language`. Dopasowanie autora po **wszystkich tokenach** zapytania w `100$a`, dzięki czemu `"Andrzej Sapkowski"` znajduje `"Sapkowski, Andrzej"`, a pozycje, gdzie autor napisał tylko przedmowę (pole `700`), odpadają
 - **Tomy i wydania:** `245$n` doklejany do tytułu, więc "Galeony Wojny T. 1" i "T. 2" są rozróżnialne (wcześniej wyglądały na duplikaty i kolidowały ze sobą przy dodawaniu). Wyniki deduplikowane po tytule - zostaje **najstarsze wydanie**, bo kilkanaście wydań tego samego tytułu zajmowało cały limit i wypychało inne książki autora. Limit (200 tytułów) stosowany **po** deduplikacji, więc liczy różne tytuły
 - **Stronicowanie (2026-09-03):** BN oddaje wyniki stronami i podaje `nextPage` w odpowiedzi. Wcześniej brana była tylko pierwsza strona (dla Harry'ego Harrisona 74 rekordy), więc autorzy z większym dorobkiem byli ucinani. Teraz idziemy za `nextPage` do 5 stron po 100 rekordów, kolejne URL-e wywoływane przez `URI.create` (już zakodowane - `uriBuilder` kodowałby je drugi raz). Górny limit stron chroni przed długim wiszeniem zapytania. Błąd w trakcie stronicowania nie kasuje wyników - oddajemy to, co zebrano do tej pory, i logujemy `WARN`. Kontrola: Harrison 50 tytułów, King 140
-- **Stronicowanie wyników w UI (2026-09-04):** panel pokazuje 20 kart na stronę, po tyle samo co lista książek. Pełna lista (do 200 tytułów, ~30 KB JSON) zostaje w pamięci komponentu, strony to wycinek przez `computed` - **zero dodatkowych żądań do backendu**. Zaznaczenia przeżywają zmianę strony i licznik "Dodaj zaznaczone (N)" liczy je ze wszystkich stron. `selectedIndexes` trzyma indeksy w pełnej tablicy, więc szablon przelicza `$index` z wycinka na globalny (`@let globalIndex = page() * pageSize + $index`) - bez tego zaznaczenia skakałyby między stronami. Pasek paginacji pojawia się dopiero od dwóch stron
 - **Świadomy kompromis:** przy deduplikacji ISBN pochodzi z pierwszego wydania, niekoniecznie z egzemplarza na półce. Akceptowalne, bo roku i wydawcy i tak nie zapisujemy - służą tylko do rozróżnienia wydań na ekranie wyboru
-- **Google Books (`GoogleBooksService`)** - drugie źródło, dla wydań obcojęzycznych. Wymaga `GOOGLE_BOOKS_API_KEY` (bez klucza dzielony, bardzo niski limit anonimowy). Ma okładki, których BN nie ma
-- **Znane ograniczenie Google Books:** wyniki są dobierane według regionu adresu IP żądania. Z serwera Oracle zapytanie o Sapkowskiego zwraca katalog niemiecki (18 `de`, 1 `en`, 1 `pt-BR`, zero `pl`) - ani `langRestrict=pl`, ani `country=PL` tego nie zmienia. Stąd BN Data jako źródło domyślne
+- **Stronicowanie wyników w UI (2026-09-04):** panel pokazuje 20 kart na stronę, po tyle samo co lista książek. Pełna lista (do 200 tytułów, ~30 KB JSON) zostaje w pamięci komponentu, strony to wycinek przez `computed` - **zero dodatkowych żądań do backendu**. Zaznaczenia przeżywają zmianę strony i licznik "Dodaj zaznaczone (N)" liczy je ze wszystkich stron. `selectedIndexes` trzyma indeksy w pełnej tablicy, więc szablon przelicza `$index` z wycinka na globalny (`@let globalIndex = page() * pageSize + $index`) - bez tego zaznaczenia skakałyby między stronami. Pasek paginacji pojawia się dopiero od dwóch stron
+- **Google Books - USUNIĘTE (2026-09-04).** Było drugim źródłem, dla wydań obcojęzycznych i okładek. Wyniki dobierane według regionu adresu IP żądania: z serwera Oracle (Niemcy) zapytanie o Sapkowskiego zwracało katalog niemiecki (18 `de`, 1 `en`, 1 `pt-BR`, zero `pl`), czego nie naprawiał ani `langRestrict=pl`, ani `country=PL`. Funkcja nie dawała nic poza kluczem API do utrzymania i drugą gałęzią w kodzie. Usunięte: `GoogleBooksService`, parametry `source`/`lang` w kontrolerze i w `book.ts`, checkbox wyboru źródła w `AuthorSearch`, `app.google-books` z `application.yaml`, `GOOGLE_BOOKS_API_KEY` z `docker-compose.yml`
+- **`coverUrl` zostaje w całym stosie** (kolumna V6, DTO, mapper, renderowanie karty), mimo że nic go teraz nie wypełnia - nowe źródło okładek nie będzie wymagało migracji
 - Status: **zaimplementowane, wdrożone, działa na produkcji**
 ---
 
@@ -237,7 +237,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - [x] `DuplicateKeyException` zamiast szerokiego `DataIntegrityViolationException` - naruszenie klucza obcego czy `NOT NULL` nie udaje już "duplikatu", tylko trafia do ogólnej obsługi z pełnym stack trace w logach
 - [x] `secret.getBytes(StandardCharsets.UTF_8)` w `JwtService`
 - [x] Rate limit na `/login`
-- [ ] Filtrowanie autora po stronie klienta dla Google Books (`inauthor:` jest nieprecyzyjne - zwraca np. książki, do których autor napisał tylko wstęp). BN Data ma to już zrobione, więc dotyczy tylko drugorzędnego źródła
+- [x] Filtrowanie autora po stronie klienta dla Google Books - **nieaktualne**, Google Books usunięte w całości (2026-09-04)
 
 ## Poprawki UI - zrobione ✅ (2026-08-07)
 - [x] Wyszukiwanie po tytule/autorze (backend: `search` param + frontend: pasek w `App`, live filtering, przycisk czyszczenia)
@@ -257,6 +257,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - [x] Stronicowanie wyników BN przez `nextPage` (2026-09-03)
 - [x] Paginacja wyników w panelu `AuthorSearch`, 20 kart na stronę, po stronie frontendu (2026-09-04)
 - [x] Licznik "Znaleziono: N" nad wynikami (2026-09-04)
+- [x] Uproszczenie UI po usunięciu Google Books: checkbox wyboru źródła i etykieta "Źródło:" usunięte, panel nazywa się teraz "Szukaj w Bibliotece Narodowej" (2026-09-04)
 - [x] Reguły `.pagination` przeniesione z `book-list.css` do globalnego `styles.css` - używają ich dwa komponenty
 
 ## Trzeci code review - zamknięte ✅ (2026-09-02)
@@ -278,6 +279,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - **Testcontainers** - sensowne, ale ma wartość dopiero przy CI/CD, którego jeszcze nie ma. Dołożyłoby zależność i czas startu testów bez dzisiejszego zysku
 
 ## Następny krok
+- [ ] Usunąć `GOOGLE_BOOKS_API_KEY` z produkcyjnego `.env` i unieważnić klucz w Google Cloud Console
 - [ ] Nowa funkcja z Backlog / Model Book (dateAdded, tagi, favorite)
 - [ ] Albo pozycja z Backlog / Techniczne / Deployment (healthcheck MariaDB, CI/CD)
 

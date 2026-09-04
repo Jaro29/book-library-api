@@ -90,10 +90,9 @@ export class BookService {
     return this.http.patch<Book>(`${environment.apiUrl}/books/${id}`, changes);
   }
 
-  searchSuggestions(author: string, source: 'bn' | 'google') {
-    const langParam = source === 'google' ? '&lang=pl' : '';
+  searchSuggestions(author: string) {
     return this.http.get<BookSuggestion[]>(
-      `${environment.apiUrl}/books/suggestions?author=${encodeURIComponent(author)}&source=${source}${langParam}`,
+      `${environment.apiUrl}/books/suggestions?author=${encodeURIComponent(author)}`,
     );
   }
 }
