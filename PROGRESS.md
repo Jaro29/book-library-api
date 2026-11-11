@@ -183,6 +183,11 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 **Bug:** `certbot-renew` jako jedyny serwis w `docker-compose.yml` nie miał `restart: unless-stopped`. Po restarcie serwera (aktualizacja jądra) został w stanie `Exited (143)`, podczas gdy pozostałe wstały same. Odnawianie certyfikatu cicho przestało działać - zauważone przypadkiem, objawiłoby się dopiero wygasnięciem certyfikatu.
 **Fix:** dodanie `restart: unless-stopped`, wdrożone przez `docker compose up -d`.
 
+## Incydent #8 - wygasły certyfikat mimo działającego `certbot-renew` (naprawiony) ✅
+**Bug:** 2026-11-11 Firefox pokazał `SEC_ERROR_EXPIRED_CERTIFICATE` (certyfikat ważny do 2026-11-04). `certbot-renew` działał poprawnie i odnowił certyfikat (nowy ważny do 2027-01-03), ale nginx wczytuje certyfikat tylko przy starcie lub przeładowaniu. Kontener `frontend` chodził bez restartu od dwóch miesięcy, więc dalej serwował stary certyfikat z pamięci.
+**Fix doraźny:** `docker exec book-library-api-frontend-1 nginx -s reload`.
+**Fix stały:** `command` w serwisie `frontend` uruchamia w tle pętlę `nginx -s reload` co 12h (ten sam rytm co `certbot-renew`), a potem startuje nginx przez oryginalny `/docker-entrypoint.sh`. Przeładowanie nie zrywa połączeń, a przy błędnej konfiguracji nginx zostaje na starej. Odnowiony certyfikat trafia do nginx najpóźniej 12h po odnowieniu, czyli ~30 dni przed wygaśnięciem.
+
 ---
 
 ## Backlog / Deployment - WSZYSTKO ZROBIONE ✅
