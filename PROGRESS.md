@@ -206,7 +206,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - [ ] Kolejne zmiany schematu = nowy plik `V<n>__opis.sql`, nigdy edycja użytej migracji
 
 ## Backlog / Model Book - planowane rozszerzenia
-- [x] coverUrl (V6, wypełniany z Google Books; BN Data nie ma okładek)
+- [x] coverUrl (V6, kolumna gotowa i przeprowadzona przez cały stos; obecnie nic jej nie wypełnia - patrz "Okładki - research źródeł")
 - [ ] dateAdded, favorite, tags
 - [ ] publisher, publishYear, language, category (BN Data **zwraca** rok i wydawcę - obecnie tylko wyświetlane przy wyborze wydania, nie zapisywane)
 - [ ] series, seriesNumber
@@ -280,7 +280,39 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - **`@Transactional` jako lek na wyścig przy duplikatach** - transakcja w `READ COMMITTED` **nie zapobiega** temu scenariuszowi: oba wątki i tak przeczytają "nie ma duplikatu" i oba wstawią. Jedyne realne rozwiązanie to ograniczenie `UNIQUE(user_id, title, author)` w bazie, którego **celowo** nie chcemy (dwa wydania tej samej książki bywają pożądane). Problem realny, rekomendacja myląca
 - **Testcontainers** - sensowne, ale ma wartość dopiero przy CI/CD, którego jeszcze nie ma. Dołożyłoby zależność i czas startu testów bez dzisiejszego zysku
 
+## Okładki - research źródeł (2026-09-04)
+
+Cel: znaleźć źródło wypełniające `coverUrl`, pusty od usunięcia Google Books. Wszystkie liczby zmierzone zapytaniami, nie szacowane.
+
+**Open Library** - `https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false` (`default=false` zwraca 404 zamiast pustego obrazka). Bez klucza API. Limit: "only 100 requests/IP are allowed for every 5 minutes" przy dostępie po ISBN. Trafienia na 24 prawdziwych ISBN-ach z BN (Sapkowski + King): **7/24**, z czego King 0/17, Sapkowski 6/7. Najlepszy wynik ze sprawdzonych źródeł.
+
+**Google Books** - sprawdzone ponownie, świeżym kluczem, zapytaniami po ISBN (nie po autorze, więc problem regionalizacji tu nie występuje). Te same 24 ISBN-y: **5/24**. Gorzej niż Open Library. Decyzja o usunięciu pozostaje słuszna, klucz ponownie unieważniony i usunięty z `.env`.
+
+**Empik** - odpada z powodów technicznych, nie prawnych. Sklep stoi za Cloudflare bot managementem: `https://www.empik.com/szukaj/produkt?q=<isbn>` zwraca challenge ("Cierpliwości...") nawet w zwykłej przeglądarce z domowego IP. Serwer produkcyjny z adresu datacenter tym bardziej nie przejdzie, a obchodzenia challenge nie robimy. Dodatkowo `robots.txt` Empiku zawiera `Disallow: /gateway/api/graphql/products`, czyli wprost blokuje endpoint z danymi produktów. Legalna droga to feed produktowy XML z programu partnerskiego (Tradedoubler, BUY.BOX), wymagający statusu wydawcy afiliacyjnego - nieadekwatne do prywatnej biblioteki.
+
+**e-ISBN (oficjalny rejestr ISBN w Polsce)** - API istnieje i jest otwarte: `https://e-isbn.pl/IsbnWeb/api.xml`, ONIX 3.0, bez autoryzacji, parametr `isbn` (wyłącznie 13 cyfr), stronicowanie przez `eisbn:nextPage`, max 100 rekordów na zapytanie. Dokumentacja: `https://e-isbn.pl/IsbnWeb/start/Dokumentacja_API.pdf`. Okładki występują jako `CollateralDetail/SupportingResource/ResourceLink` z `ResourceContentType 01`, mimo że dokumentacja o nich milczy. Odrzucone, bo:
+- pokrycie okładek **9/100 i 19/100** w dwóch próbkach po sto rekordów z różnych okresów
+- trafienia dla ISBN-ów z naszej bazy: **0/24**. e-ISBN rejestruje zgłoszenia mniej więcej od 2015, a nasze ISBN-y to wydania z lat 90, w dodatku dziesięciocyfrowe (parametr `isbn` przyjmuje tylko trzynastocyfrowe, więc doszłaby konwersja)
+- okładki dokładają głównie starostwa, muzea, uczelnie i self-publishing, nie wydawcy beletrystyki
+- brak nagłówków CORS, więc frontend nie może odpytać bezpośrednio; wymagałby serwisu w backendzie i parsowania ONIX
+- część okładek serwowana jest jako `application/pdf` (`show_cover.pdf`), więc nie wejdzie w `<img>`; reszta to JPG na CDN `elibri.com.pl`
+
+**BN Data** - potwierdzone ostatecznie: rekord nie zawiera pola MARC `856` ani żadnego URL-a. Temat zamknięty.
+
+### Rekomendacja
+`coverUrl` jest już przeprowadzony przez cały stos (V6, model, DTO, mapper, SQL, renderowanie karty), więc backend nie wymaga żadnej zmiany. Najtańsze rozwiązanie:
+1. pole "URL okładki" w `AddBookForm` / `EditBookForm` do ręcznego wklejenia adresu
+2. w karcie książki `src` = `coverUrl`, a przy pustym fallback na `https://covers.openlibrary.org/b/isbn/{isbn}-M.jpg?default=false`, z `onerror` spadającym na fleuron
+
+Zero zmian w backendzie, zero migracji, zero klucza API, zero nowych zależności. Limit 100/5min nieosiągalny, bo żądania idą z przeglądarki użytkownika i po dwadzieścia na stronę.
+
+### Uboczne znalezisko: deduplikacja wyrzuca nowe wydania
+Przy sprawdzaniu rozkładu lat w odpowiedziach BN: dla Sapkowskiego, po pełnym stronicowaniu, jest 166 rekordów, z czego **35 to wydania od 2015 roku** (najnowsze 2026). `BnDataService` deduplikuje po tytule i zostawia **najstarsze** wydanie, więc te 35 nowych rekordów jest odrzucanych. Skutki uboczne: zapisywany ISBN opisuje wydanie sprzed trzydziestu lat, a nie egzemplarz z półki, i każde źródło okładek trafia gorzej, bo stare wydania są słabiej opisane wszędzie. Zamiana reguły na "zostaje najnowsze wydanie" to zmiana jednego porównania. Osobny temat, do rozważenia niezależnie od okładek.
+
+---
+
 ## Następny krok
 - [ ] Nowa funkcja z Backlog / Model Book (dateAdded, tagi, favorite)
 - [ ] Albo pozycja z Backlog / Techniczne / Deployment (healthcheck MariaDB, CI/CD)
+- [ ] Albo okładki: pole na ręczny URL + fallback Open Library w `<img>` (patrz "Okładki - research źródeł")
 
