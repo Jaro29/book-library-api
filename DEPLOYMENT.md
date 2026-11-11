@@ -40,6 +40,7 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 - [x] `nginx.conf` (Etap B): drugi `server` blok na porcie 443 z `ssl_certificate`/`ssl_certificate_key`; port 80 przekierowuje (`301`) na HTTPS, poza ścieżką ACME
 - [x] Port 443 otwarty w Security List Oracle (ten sam wzorzec co port 80)
 - [x] Serwis `certbot-renew` - pętla `certbot renew` co 12h (odnawia tylko, gdy zostało <30 dni do wygaśnięcia)
+- [x] Serwis `frontend` - pętla `nginx -s reload` co 12h, żeby nginx wczytał odnowiony certyfikat (patrz Incydent #8 w `PROGRESS.md`)
 - [x] CORS: `allowedOrigins` zaktualizowane z `http://` na **`https://afterword.coffe.ink`** - HTTPS zmienia `Origin`, więc stary wpis przestał pasować
 
 ### Autoryzacja ✅
@@ -141,5 +142,6 @@ Po restarcie **zawsze sprawdzić `docker compose ps -a`**, nie tylko `docker com
 - **Nowe zmienne env w `docker-compose.yml` trzeba jawnie dopisać w `environment:`** - samo dodanie do `.env` nie wystarczy, `.env` tylko dostarcza wartości dla `${...}` **już użytych** w compose
 - **502 Bad Gateway po `docker compose up -d --build backend`** - nginx nie odświeża automatycznie adresu IP kontenera backendu. Zawsze `docker compose restart frontend` po samodzielnej przebudowie backendu
 - **Bezpieczne wdrażanie migracji NOT NULL na istniejące dane:** rozbij na dwa wdrożenia - (1) nullable kolumna + kod aplikacji, (2) backfill danych przez `UPDATE`, (3) osobna migracja `NOT NULL`, dopiero gdy backfill potwierdzony (np. `SELECT COUNT(*) vs COUNT(kolumna)`)
+- **Odnowiony certyfikat nie działa, dopóki nginx się nie przeładuje** - nginx czyta pliki certyfikatu tylko przy starcie i przy `nginx -s reload`. Samo odnowienie przez `certbot-renew` nic nie zmienia dla przeglądarki; bez przeładowania nginx serwuje stary certyfikat aż do wygaśnięcia. Stąd pętla reload w `command` serwisu `frontend`. Sprawdzenie, co faktycznie serwuje serwer: `echo | openssl s_client -connect afterword.coffe.ink:443 -servername afterword.coffe.ink 2>/dev/null | openssl x509 -noout -enddate`
 - **`restart: unless-stopped` na każdym serwisie, który ma działać ciągle** - brak tej polityki przy `certbot-renew` sprawił, że po restarcie serwera odnawianie certyfikatu cicho przestało działać. Awaria tego typu nie daje żadnego sygnału aż do momentu, gdy jest już za późno
 - **Zewnętrzne API może zwracać inne dane w zależności od adresu IP serwera** - Google Books z serwera Oracle (Niemcy) zwraca katalog niemiecki, mimo `langRestrict=pl` i `country=PL`. Co działa lokalnie, nie musi działać na produkcji - warto testować zewnętrzne integracje **z serwera**, nie tylko z lokalnej maszyny
