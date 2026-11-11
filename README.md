@@ -27,7 +27,7 @@ Monorepo: `backend/` (Spring Boot) + `frontend/` (Angular), jeden `docker-compos
 
 ```mermaid
 flowchart TD
-    User[Przeglądarka] -->|":80"| Nginx["frontend (nginx + Angular build)"]
+    User[Przeglądarka] -->|":443 HTTPS (:80 → 301)"| Nginx["frontend (nginx + Angular build)"]
     Nginx -->|"/api/* → proxy_pass"| Backend[Spring Boot :8080]
     Backend -->|JDBC| DB[(MariaDB)]
 
@@ -106,6 +106,7 @@ Rzeczy, na które trafi każdy powtarzający tę konfigurację od zera:
 - **CORS `allowedOrigins` porównuje cały origin, razem z protokołem** - `http://` i `https://` to różne originy dla przeglądarki; po migracji na HTTPS trzeba zaktualizować backend, inaczej 403 na każdym żądaniu
 - **H2 vs MariaDB: różne nazwy ograniczeń/tabel systemowych** - H2 automatycznie nazywa proste ograniczenia `UNIQUE` losowo (np. `CONSTRAINT_3C`), MariaDB nazywa je po nazwie kolumny (np. `isbn`); tabela `INFORMATION_SCHEMA.CONSTRAINTS` w starszym H2 nazywa się `TABLE_CONSTRAINTS` w nowszym/ANSI. Po kilku takich niespodziankach - lokalny dev i testy przeniesione na prawdziwą, trwałą MariaDB
 - **502 Bad Gateway po `docker compose up -d --build backend`** - nginx cache'uje adres IP kontenera backendu przy własnym starcie i nie odświeża go automatycznie po przebudowie backendu. Zawsze `docker compose restart frontend` po samodzielnej przebudowie backendu
+- **Odnowiony certyfikat nie działa bez przeładowania nginx** - nginx czyta pliki certyfikatu tylko przy starcie i przy `nginx -s reload`, więc odnowienie przez `certbot-renew` samo niczego nie zmienia dla przeglądarki. Kontener chodzący bez restartu dłużej niż ważność certyfikatu serwuje stary aż do `SEC_ERROR_EXPIRED_CERTIFICATE`. Dlatego `frontend` przeładowuje nginx co 12h
 - **Spring Boot 4.x zmienił pakiety klas testowych** - np. `@JdbcTest`/`@AutoConfigureTestDatabase` są teraz w `org.springframework.boot.jdbc.test.autoconfigure` (kolejność `jdbc`/`test.autoconfigure` odwrócona względem Spring Boot 2.x/3.x)
 - **Spring Boot 4.x używa Jacksona 3** - pakiet `tools.jackson.databind`, nie `com.fasterxml.jackson.databind`. Kod z importem z Jacksona 2 **skompiluje się**, ale wywali się w runtime na `Type definition error`, bo `RestClient` deserializuje przez Jacksona 3
 - **`ESCAPE '\\'` w Javowym text blocku rozbija zapytanie w MariaDB** - do SQL trafia `ESCAPE '\'`, a MariaDB traktuje backslash jako znak ucieczki wewnątrz literałów, więc widzi niedomknięty string. Użyć znaku, który nie ma specjalnego znaczenia w żadnej warstwie (tu: `ESCAPE '!'`)
