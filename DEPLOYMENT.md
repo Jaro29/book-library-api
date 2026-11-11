@@ -36,7 +36,7 @@ Wdrożenie aplikacji (backend + frontend + MariaDB) na Oracle Cloud Free Tier, j
 ### HTTPS ✅
 - [x] Serwis `certbot` w `docker-compose.yml`, wolumeny `certbot-etc`/`certbot-www` współdzielone z `frontend`
 - [x] `nginx.conf`: `location /.well-known/acme-challenge/` dodana **przed** wdrożeniem certyfikatu (Etap A)
-- [x] Certyfikat wygenerowany: `docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d afterword.coffe.ink --email ... --agree-tos --no-eff-email` - ważny do **2026-11-04**
+- [x] Certyfikat wygenerowany: `docker compose run --rm certbot certonly --webroot -w /var/www/certbot -d afterword.coffe.ink --email ... --agree-tos --no-eff-email` - pierwszy certyfikat był ważny do 2026-11-04; od tego czasu odnawia go `certbot-renew`, a aktualną datę ważności pokazuje komenda `openssl` z sekcji „Notatki / rzeczy do pamiętania”
 - [x] `nginx.conf` (Etap B): drugi `server` blok na porcie 443 z `ssl_certificate`/`ssl_certificate_key`; port 80 przekierowuje (`301`) na HTTPS, poza ścieżką ACME
 - [x] Port 443 otwarty w Security List Oracle (ten sam wzorzec co port 80)
 - [x] Serwis `certbot-renew` - pętla `certbot renew` co 12h (odnawia tylko, gdy zostało <30 dni do wygaśnięcia)

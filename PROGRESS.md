@@ -136,10 +136,11 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - Status: **zbudowany, przetestowany, działa na serwerze produkcyjnym**
 
 ### docker-compose.yml
-- Trzy serwisy: `mariadb` (z nazwanym wolumenem `mariadb-data` dla trwałości danych), `backend`, `frontend`
-- Tylko `frontend` ma wystawiony port (80) na zewnątrz - `backend`/`mariadb` dostępne tylko wewnątrz sieci Compose
-- `restart: unless-stopped` na wszystkich serwisach
-- Status: **działa na produkcji od kilku dni bez przerw**
+- Pięć serwisów: `mariadb` (z nazwanym wolumenem `mariadb-data` dla trwałości danych), `backend`, `frontend`, `certbot` (jednorazowe wystawienie certyfikatu, normalnie w stanie `Exited`), `certbot-renew` (odnawianie co 12h)
+- Tylko `frontend` ma wystawione porty na zewnątrz: 80 (przekierowanie na HTTPS i ścieżka ACME) i 443 - `backend`/`mariadb` dostępne tylko wewnątrz sieci Compose
+- `frontend` przeładowuje nginx co 12h, żeby wczytać odnowiony certyfikat (Incydent #8)
+- `restart: unless-stopped` na wszystkich serwisach działających ciągle (bez jednorazowego `certbot`)
+- Status: **działa na produkcji od 2026-08-05**
 
 ### .env
 - Zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
