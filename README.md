@@ -89,7 +89,7 @@ Zamiast wpisywać dane książki ręcznie, można wyszukać autora w zewnętrzny
 
 **Brak okładek w BN:** karty wyników z BN nie pokazują pustego prostokąta, tylko rok wydania i wydawcę - to w praktyce **jedyne**, co odróżnia pięć różnych wydań tego samego tytułu.
 
-Oba źródła mają timeout 3s i przy awarii zwracają pustą listę zamiast błędu - niedostępność zewnętrznego katalogu nigdy nie blokuje ręcznego dodawania książek.
+`BnDataService` ma timeout 3s (połączenie i odczyt, na każde żądanie do BN) i przy awarii zwraca pustą listę zamiast błędu - niedostępność zewnętrznego katalogu nigdy nie blokuje ręcznego dodawania książek.
 
 ## Troubleshooting - nietypowe problemy napotkane po drodze
 

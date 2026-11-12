@@ -96,7 +96,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól, obsługa 409 i ogólnych błędów 400 (`generalError`), domyślny status `FINISHED`/`timesRead=1`
 - Status wyświetlany jako kolorowa plakietka (`color-mix()` z istniejących zmiennych CSS), akcje edit/delete jako ikony SVG (`stroke=currentColor`, bez dodatkowej biblioteki)
 - Formularz dodawania zwijany (`App.showAddForm` signal), pasek wyszukiwania + przycisk "Dodaj" w jednym wierszu
-- `AuthorSearch` (osobny panel, otwierany przyciskiem "Szukaj po autorze w sieci"): checkbox przełącza źródło (BN / Google), wyniki jako siatka kart z checkboxami, "zaznacz/odznacz wszystko", "Dodaj zaznaczone (N)", etykieta źródła, podsumowanie po dodaniu. Wsadowe dodawanie przez `forkJoin` z `catchError` na każdym żądaniu (duplikat nie przerywa reszty). Dodawane pozycje dostają `FINISHED`/`timesRead=1`
+- `AuthorSearch` (osobny panel, otwierany przyciskiem "Szukaj w Bibliotece Narodowej"): jedno źródło (BN Data), wyniki jako siatka kart z checkboxami, "zaznacz/odznacz wszystko", "Dodaj zaznaczone (N)", licznik "Znaleziono: N", podsumowanie po dodaniu. Wsadowe dodawanie przez `forkJoin` z `catchError` na każdym żądaniu (duplikat nie przerywa reszty). Dodawane pozycje dostają `FINISHED`/`timesRead=1`
 - Stan współdzielony przez `BookService` (signals)
 - Stylowanie: ciemny motyw "biblioteka"
 - `environment.ts`/`environment.prod.ts` - `apiUrl` przełączany przez `fileReplacements` w `angular.json` (dev: `http://localhost:8080`, prod: `/api`)
@@ -143,7 +143,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - Status: **działa na produkcji od 2026-08-05**
 
 ### .env
-- Zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
+- Zmienne: `DB_ROOT_PASSWORD`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`, `JWT_SECRET`
 - Lokalny (laptop) i produkcyjny (serwer) - **osobne, różne** hasła, wygenerowane przez `openssl rand -base64 24`, zapisane w KeePassXC
 - **Incydent (naprawiony):** `.env` z placeholderami przypadkiem scommitowany przez błąd w `.gitignore` (linie sklejone przez `echo >>`). Usunięty ze śledzenia, `.gitignore` naprawiony - szczegóły w `DEPLOYMENT.md`
 
