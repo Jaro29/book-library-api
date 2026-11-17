@@ -53,8 +53,9 @@
 
 .book-grid .book-info { align-items: center; gap: 6px; }
 
+.book-grid .book-title-btn { flex-basis: 100%; }
+
 .book-grid .book-title {
-  flex-basis: 100%;
   font-size: 0.95rem;
   line-height: 1.25;
   display: -webkit-box;
@@ -76,6 +77,24 @@
 .book-grid .delete-confirm { flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
 
 .book-info { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; min-width: 0; }
+
+/* Tytuł jako przycisk otwierający szczegóły */
+.book-title-btn {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.book-title-btn:hover .book-title {
+  text-decoration: underline;
+  text-decoration-color: var(--status-color);
+  text-underline-offset: 3px;
+}
 .book-title { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; }
 .book-author { color: var(--color-parchment-muted); font-style: italic; }
 .status-pill {

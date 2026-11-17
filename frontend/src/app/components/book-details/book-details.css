@@ -1,0 +1,98 @@
+/* Okno szczegółów: natywny <dialog> otwierany przez showModal() */
+.book-details {
+  --status-color: var(--color-parchment-muted);
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  padding: 24px;
+  border: 1px solid var(--color-spine);
+  border-top: 4px solid var(--status-color);
+  border-radius: 6px;
+  background: var(--color-cover);
+  color: var(--color-parchment);
+}
+
+.book-details[data-status='FINISHED'] { --status-color: var(--color-sage); }
+.book-details[data-status='READING'] { --status-color: var(--color-marigold); }
+
+.book-details::backdrop {
+  background: rgb(10 7 5 / 0.75);
+}
+
+.details-body { display: flex; gap: 20px; align-items: flex-start; }
+.details-main { flex: 1; min-width: 0; }
+
+.details-cover {
+  width: 110px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  border: 1px solid var(--color-spine);
+}
+
+.book-details h2 {
+  font-size: 1.5rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.details-author {
+  margin: 4px 0 16px;
+  color: var(--color-parchment-muted);
+  font-style: italic;
+}
+
+.details-fields {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 16px;
+  align-items: center;
+  margin: 0;
+}
+
+.details-fields dt,
+.details-notes h3 {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-parchment-muted);
+}
+
+.details-fields dd { margin: 0; overflow-wrap: anywhere; }
+
+.details-status { color: var(--status-color); }
+
+.details-times-read {
+  margin-left: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--color-marigold);
+}
+
+.details-notes {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-spine);
+}
+
+.details-notes p {
+  margin: 6px 0 0;
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+}
+
+.details-notes .details-empty { color: var(--color-parchment-muted); font-style: italic; }
+
+.details-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+/* Na telefonie okładka nad tekstem */
+@media (max-width: 520px) {
+  .book-details { padding: 18px; }
+  .details-body { flex-direction: column; gap: 14px; }
+  .details-cover { width: 80px; }
+}
