@@ -92,7 +92,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - **Motyw graficzny: fleuron** (❦, drukarski ornament roślinny) - znaczniki listy i notka na stronie powitalnej, pod nagłówkiem aplikacji, w pustym stanie listy, na końcu ostatniej strony katalogu (jak ornament kończący rozdział), oraz jako favicon. Świadomie **nie** przy każdej książce ani w przyciskach - ornament działa, dopóki jest rzadki
 - **Style formularzy logowania i rejestracji** w globalnym `styles.css` (klasa `.auth-form`) - oba mają identyczną strukturę, więc dublowanie w dwóch plikach komponentów nie miałoby sensu. Wcześniej `login-form.css` był **pusty**, przez co etykiety nigdy nie dostały stylu
 - **Puste stany listy** z dwoma wariantami treści: inna dla pustej biblioteki (zachęta do dodania), inna dla wyszukiwania bez wyników. Paginacja **znika** przy zerowych wynikach zamiast pokazywać "Strona 1 z 0"
-- `BookList`: lista + paginacja (20 pozycji na stronę), wyszukiwanie (pasek w `App`, dzielony przez `bookService.searchQuery`), delete inline z dwuetapowym potwierdzeniem i stanem "Usuwanie...", edit inline (`EditBookForm`)
+- `BookList`: lista albo kafelki + paginacja (20 pozycji na stronę w liście, 48 w kafelkach), wyszukiwanie (pasek w `App`, dzielony przez `bookService.searchQuery`), delete inline z dwuetapowym potwierdzeniem i stanem "Usuwanie...", edit inline (`EditBookForm`)
 - `AddBookForm` / `EditBookForm`: Signal Forms, pełny komplet pól, obsługa 409 i ogólnych błędów 400 (`generalError`), domyślny status `FINISHED`/`timesRead=1`
 - Status wyświetlany jako kolorowa plakietka (`color-mix()` z istniejących zmiennych CSS), akcje edit/delete jako ikony SVG (`stroke=currentColor`, bez dodatkowej biblioteki)
 - Formularz dodawania zwijany (`App.showAddForm` signal), pasek wyszukiwania + przycisk "Dodaj" w jednym wierszu
@@ -317,6 +317,12 @@ Zero zmian w backendzie, zero migracji, zero klucza API, zero nowych zależnośc
 
 ### Uboczne znalezisko: deduplikacja wyrzuca nowe wydania
 Przy sprawdzaniu rozkładu lat w odpowiedziach BN: dla Sapkowskiego, po pełnym stronicowaniu, jest 166 rekordów, z czego **35 to wydania od 2015 roku** (najnowsze 2026). `BnDataService` deduplikuje po tytule i zostawia **najstarsze** wydanie, więc te 35 nowych rekordów jest odrzucanych. Skutki uboczne: zapisywany ISBN opisuje wydanie sprzed trzydziestu lat, a nie egzemplarz z półki, i każde źródło okładek trafia gorzej, bo stare wydania są słabiej opisane wszędzie. Zamiana reguły na "zostaje najnowsze wydanie" to zmiana jednego porównania. Osobny temat, do rozważenia niezależnie od okładek.
+
+## Wygląd - zrobione ✅ (2026-11-17)
+- [x] Niższy nagłówek aplikacji, ~217px → ~147px (PR #71)
+- [x] Widok kafelków z przełącznikiem lista/kafelki: 6/4/2 kolumny, 48 książek na stronę (PR #72)
+- [x] Okno szczegółów książki po kliknięciu tytułu, z przyciskiem „Edytuj” (PR #73)
+- Same zmiany frontendu, bez zmian w backendzie i bazie. Wdrożone na produkcję 2026-11-17
 
 ---
 

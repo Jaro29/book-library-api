@@ -182,7 +182,7 @@ Tabela `users`:
 ## Frontend - architektura komponentów
 
 - **Stan współdzielony przez `BookService`** (nie przez każdy komponent osobno) - sygnały `books`, `currentPage`, `totalPages` żyją w jednym miejscu, komponenty je **czytają**, serwis jest jedynym, który je **zmienia**. Dzięki temu np. dodanie książki w `AddBookForm` automatycznie odświeża listę w `BookList`, bez ręcznej synchronizacji.
-- **Komunikacja rodzic-dziecko:** `input.required<T>()` / `output<void>()` (nowoczesny odpowiednik `@Input`/`@Output` w Angularze 22) - używane przez `EditBookForm` osadzony w wierszach `BookList`.
+- **Komunikacja rodzic-dziecko:** `input.required<T>()` / `output<void>()` (nowoczesny odpowiednik `@Input`/`@Output` w Angularze 22) - używane przez `EditBookForm` osadzony w wierszach `BookList` oraz przez `BookDetails` (okno szczegółów na natywnym `<dialog>`: `input.required<Book>()`, wyjścia `closed` i `editRequested`).
 - **Formularze:** Signal Forms (`form()`, `FormField`, `required()`, `min()` z `@angular/forms/signals`) - nie klasyczne Reactive Forms.
 - **Zmiana wykrywania (change detection):** komponenty działają w domyślnym trybie `Default`. Stan i tak trzymany jest w `signal()`, więc przejście na `OnPush` byłoby bezpieczne - pozycja w backlogu, nie zrobione
 - **Wyszukiwanie:** wpisywanie w pasek przechodzi przez `debounceTime(300)` i `distinctUntilChanged()`, a same żądania przez `switchMap` - dzięki temu jedno słowo to jedno zapytanie, a odpowiedź na wcześniejszy, wolniejszy prefiks nie nadpisuje świeższych wyników
