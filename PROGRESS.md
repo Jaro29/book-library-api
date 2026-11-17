@@ -99,6 +99,7 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - `AuthorSearch` (osobny panel, otwierany przyciskiem "Szukaj w Bibliotece Narodowej"): jedno źródło (BN Data), wyniki jako siatka kart z checkboxami, "zaznacz/odznacz wszystko", "Dodaj zaznaczone (N)", licznik "Znaleziono: N", podsumowanie po dodaniu. Wsadowe dodawanie przez `forkJoin` z `catchError` na każdym żądaniu (duplikat nie przerywa reszty). Dodawane pozycje dostają `FINISHED`/`timesRead=1`
 - Stan współdzielony przez `BookService` (signals)
 - Stylowanie: ciemny motyw "biblioteka"
+- Nagłówek aplikacji kompaktowy (~147px zamiast ~217px przy 1600px szerokości): mniejsze odstępy w `app.css` i `line-height: 1.1` przy tytule. Wcześniej tytuł dziedziczył `1.5` z `body`, co przy dużym foncie dawało dużo pustego miejsca. Rozmiary tekstu bez zmian
 - `environment.ts`/`environment.prod.ts` - `apiUrl` przełączany przez `fileReplacements` w `angular.json` (dev: `http://localhost:8080`, prod: `/api`)
 - Status: **zaimplementowane, zmergowane, działa na produkcji**
 
