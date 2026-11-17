@@ -5,6 +5,19 @@ import { Book } from '../models/book';
 import { environment } from '../../environments/environment';
 import { BookSuggestion } from '../models/book-suggestion';
 
+export type BookView = 'list' | 'grid';
+
+const VIEW_STORAGE_KEY = 'bookView';
+const PAGE_SIZES: Record<BookView, number> = { list: 20, grid: 48 };
+
+function readStoredView(): BookView {
+  try {
+    return localStorage.getItem(VIEW_STORAGE_KEY) === 'grid' ? 'grid' : 'list';
+  } catch {
+    return 'list';
+  }
+}
+
 interface PageResponse<T> {
   content: T[];
   page: number;
@@ -22,7 +35,11 @@ export class BookService {
   totalPages = signal(0);
   searchQuery = signal('');
   loadError = signal<string | null>(null);
-  pageSize = 20;
+  viewMode = signal<BookView>(readStoredView());
+
+  get pageSize() {
+    return PAGE_SIZES[this.viewMode()];
+  }
 
   private pageRequests = new Subject<number>();
   private searchInput = new Subject<string>();
@@ -53,6 +70,20 @@ export class BookService {
 
   loadBooks(page: number = 0) {
     this.pageRequests.next(page);
+  }
+
+  setViewMode(mode: BookView) {
+    if (mode === this.viewMode()) {
+      return;
+    }
+    const firstBookIndex = this.currentPage() * this.pageSize;
+    this.viewMode.set(mode);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, mode);
+    } catch {
+      // brak dostępu do localStorage: widok działa, tylko nie zostanie zapamiętany
+    }
+    this.loadBooks(Math.floor(firstBookIndex / this.pageSize));
   }
 
   search(query: string) {
