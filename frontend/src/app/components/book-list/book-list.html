@@ -1,15 +1,39 @@
 <section class="book-list">
   <div class="list-header">
     <h2>Lista książek</h2>
+    <div class="view-toggle" role="group" aria-label="Widok">
+      <button class="btn btn-ghost icon-btn" aria-label="Lista" title="Lista"
+        [attr.aria-pressed]="viewMode() === 'list'" (click)="setViewMode('list')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 6h13"></path>
+          <path d="M8 12h13"></path>
+          <path d="M8 18h13"></path>
+          <path d="M3 6h.01"></path>
+          <path d="M3 12h.01"></path>
+          <path d="M3 18h.01"></path>
+        </svg>
+      </button>
+      <button class="btn btn-ghost icon-btn" aria-label="Kafelki" title="Kafelki"
+        [attr.aria-pressed]="viewMode() === 'grid'" (click)="setViewMode('grid')">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="3" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="3" width="7" height="7" rx="1"></rect>
+          <rect x="3" y="14" width="7" height="7" rx="1"></rect>
+          <rect x="14" y="14" width="7" height="7" rx="1"></rect>
+        </svg>
+      </button>
+    </div>
   </div>
 
   @if (bookService.loadError()) {
   <p class="load-error">{{ bookService.loadError() }}</p>
   }
 
-  <ul class="book-rows">
+  <ul class="book-rows" [class.book-grid]="viewMode() === 'grid'">
     @for (book of books(); track book.id) {
-    <li class="book-row" [attr.data-status]="book.status">
+    <li class="book-row" [attr.data-status]="book.status" [class.is-editing]="editingBookId() === book.id">
       @if (editingBookId() === book.id) {
       <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
       } @else {

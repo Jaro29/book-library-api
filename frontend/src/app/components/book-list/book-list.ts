@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
-import { BookService } from '../../services/book';
+import { BookService, BookView } from '../../services/book';
 import { EditBookForm } from '../edit-book-form/edit-book-form';
 
 @Component({
@@ -13,9 +13,16 @@ export class BookList implements OnInit {
   protected books = this.bookService.books;
   protected currentPage = this.bookService.currentPage;
   protected totalPages = this.bookService.totalPages;
+  protected viewMode = this.bookService.viewMode;
 
   ngOnInit() {
     this.bookService.loadBooks();
+  }
+
+  setViewMode(mode: BookView) {
+    this.editingBookId.set(null);
+    this.confirmingDeleteId.set(null);
+    this.bookService.setViewMode(mode);
   }
 
   nextPage() {

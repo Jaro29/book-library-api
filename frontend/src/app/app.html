@@ -8,7 +8,7 @@
     </button>
   </header>
 
-  <main class="app-main">
+  <main class="app-main" [class.app-main-wide]="bookService.viewMode() === 'grid'">
     <div class="toolbar">
       <div class="search-input-wrapper">
         <input
