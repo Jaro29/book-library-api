@@ -1,10 +1,12 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { BookService, BookView } from '../../services/book';
 import { EditBookForm } from '../edit-book-form/edit-book-form';
+import { BookDetails } from '../book-details/book-details';
+import { Book } from '../../models/book';
 
 @Component({
   selector: 'app-book-list',
-  imports: [EditBookForm],
+  imports: [EditBookForm, BookDetails],
   templateUrl: './book-list.html',
   styleUrl: './book-list.css',
 })
@@ -74,5 +76,15 @@ export class BookList implements OnInit {
 
   cancelEdit() {
     this.editingBookId.set(null);
+  }
+
+  detailsBook = signal<Book | null>(null);
+
+  openDetails(book: Book) {
+    this.detailsBook.set(book);
+  }
+
+  closeDetails() {
+    this.detailsBook.set(null);
   }
 }

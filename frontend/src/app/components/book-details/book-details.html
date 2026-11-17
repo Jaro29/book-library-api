@@ -1,0 +1,57 @@
+<dialog #dialog class="book-details" [attr.data-status]="book().status" aria-labelledby="book-details-title"
+  (click)="onDialogClick($event)" (cancel)="$event.preventDefault(); close()">
+  <div class="details-body">
+    @if (book().coverUrl) {
+    <img class="details-cover" [src]="book().coverUrl" alt="" />
+    }
+    <div class="details-main">
+      <h2 id="book-details-title">{{ book().title }}</h2>
+      <p class="details-author">{{ book().author }}</p>
+
+      <dl class="details-fields">
+        <dt>Status</dt>
+        <dd>
+          <span class="details-status">
+            @switch (book().status) {
+            @case ('FINISHED') {
+            Przeczytana
+            }
+            @case ('READING') {
+            W trakcie
+            }
+            @default {
+            Do przeczytania
+            }
+            }
+          </span>
+          @if (book().timesRead > 0) {
+          <span class="details-times-read">×{{ book().timesRead }}</span>
+          }
+        </dd>
+
+        <dt>ISBN</dt>
+        <dd>{{ book().isbn || '—' }}</dd>
+
+        <dt>Rozpoczęta</dt>
+        <dd>{{ book().startDate ? (book().startDate | date: 'd.MM.yyyy') : '—' }}</dd>
+
+        <dt>Skończona</dt>
+        <dd>{{ book().finishDate ? (book().finishDate | date: 'd.MM.yyyy') : '—' }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  <section class="details-notes">
+    <h3>Notatki</h3>
+    @if (book().notes) {
+    <p>{{ book().notes }}</p>
+    } @else {
+    <p class="details-empty">Brak notatek.</p>
+    }
+  </section>
+
+  <div class="details-actions">
+    <button class="btn btn-ghost" type="button" (click)="close()">Zamknij</button>
+    <button class="btn btn-primary" type="button" (click)="edit()">Edytuj</button>
+  </div>
+</dialog>

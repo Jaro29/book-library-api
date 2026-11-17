@@ -38,7 +38,9 @@
       <app-edit-book-form [book]="book" (saved)="cancelEdit()" (cancelled)="cancelEdit()" />
       } @else {
       <div class="book-info">
-        <span class="book-title">{{ book.title }}</span>
+        <button class="book-title-btn" type="button" (click)="openDetails(book)">
+          <span class="book-title">{{ book.title }}</span>
+        </button>
         <span class="book-author">{{ book.author }}</span>
         <span class="status-pill" [attr.data-status]="book.status">
           @switch (book.status) {
@@ -122,5 +124,9 @@
   @if (currentPage() + 1 >= totalPages()) {
   <p class="list-end" aria-hidden="true">❦</p>
   }
+  }
+
+  @if (detailsBook(); as book) {
+  <app-book-details [book]="book" (closed)="closeDetails()" (editRequested)="startEdit($event)" />
   }
 </section>
