@@ -16,6 +16,10 @@ main → develop → <typ>/<opis>
 
 - `feature/` - nowa funkcjonalność (`feature/https-setup-stage-a`, `feature/certbot-auto-renew`, `feature/multi-user-jwt-wip`)
 - `fix/` - poprawka błędu (`fix/cors-https-origin`, `fix/isbn-empty-string-duplicate`)
+- `docs/` - sama dokumentacja, bez zmian w kodzie (`docs/fix-stale-infra-docs`, `docs/add-cover-sources-research`)
+- `chore/` - porządki i drobne zmiany konfiguracji bez nowej funkcji (`chore/monorepo-restructure`, `chore/page-size-20`)
+- `refactor/` - zmiana struktury kodu bez zmiany zachowania (`refactor/dedupe-sql-parameters`)
+- `test/` - same testy (`test/jwt-and-login`, `test/update-book-not-found`)
 
 ### Reszta nazwy
 
