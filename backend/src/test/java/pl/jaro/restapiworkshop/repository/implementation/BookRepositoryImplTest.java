@@ -9,8 +9,10 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.model.BookSort;
 import pl.jaro.restapiworkshop.model.BookStatus;
 
+import java.time.LocalDate;
 import java.util.Collection;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -104,7 +106,7 @@ class BookRepositoryImplTest {
     void shouldFindBookByTitleFragment() {
         bookRepository.create(sampleBook("Zzyzx Kwikwidacja"));
 
-        Collection<Book> found = bookRepository.searchBooks("kwikwid", 0, 20, USER_ID);
+        Collection<Book> found = bookRepository.searchBooks("kwikwid", null, BookSort.ADDED, 0, 20, USER_ID);
 
         assertThat(found).hasSize(1);
         assertThat(found.iterator().next().getTitle()).isEqualTo("Zzyzx Kwikwidacja");
@@ -116,7 +118,7 @@ class BookRepositoryImplTest {
         book.setAuthor("Bardzozacnyautor Testowy");
         bookRepository.create(book);
 
-        Collection<Book> found = bookRepository.searchBooks("zacnyaut", 0, 20, USER_ID);
+        Collection<Book> found = bookRepository.searchBooks("zacnyaut", null, BookSort.ADDED, 0, 20, USER_ID);
 
         assertThat(found).hasSize(1);
     }
@@ -125,14 +127,14 @@ class BookRepositoryImplTest {
     void shouldIgnoreCaseWhenSearching() {
         bookRepository.create(sampleBook("Zzyzx Wielkoliterowa"));
 
-        Collection<Book> found = bookRepository.searchBooks("WIELKOLITEROWA", 0, 20, USER_ID);
+        Collection<Book> found = bookRepository.searchBooks("WIELKOLITEROWA", null, BookSort.ADDED, 0, 20, USER_ID);
 
         assertThat(found).hasSize(1);
     }
 
     @Test
     void shouldReturnEmptyWhenNothingMatches() {
-        Collection<Book> found = bookRepository.searchBooks("qqxzwv-nie-ma-takiej", 0, 20, USER_ID);
+        Collection<Book> found = bookRepository.searchBooks("qqxzwv-nie-ma-takiej", null, BookSort.ADDED, 0, 20, USER_ID);
 
         assertThat(found).isEmpty();
     }
@@ -141,8 +143,8 @@ class BookRepositoryImplTest {
     void shouldTreatWildcardCharactersAsLiteralText() {
         bookRepository.create(sampleBook("Zzyzx Zwykły Tytuł"));
 
-        Collection<Book> foundByPercent = bookRepository.searchBooks("%", 0, 20, USER_ID);
-        Collection<Book> foundByUnderscore = bookRepository.searchBooks("_", 0, 20, USER_ID);
+        Collection<Book> foundByPercent = bookRepository.searchBooks("%", null, BookSort.ADDED, 0, 20, USER_ID);
+        Collection<Book> foundByUnderscore = bookRepository.searchBooks("_", null, BookSort.ADDED, 0, 20, USER_ID);
 
         assertThat(foundByPercent).noneMatch(book -> "Zzyzx Zwykły Tytuł".equals(book.getTitle()));
         assertThat(foundByUnderscore).noneMatch(book -> "Zzyzx Zwykły Tytuł".equals(book.getTitle()));
@@ -153,8 +155,8 @@ class BookRepositoryImplTest {
         bookRepository.create(sampleBook("Zzyzx Policzalna Pierwsza"));
         bookRepository.create(sampleBook("Zzyzx Policzalna Druga"));
 
-        Collection<Book> found = bookRepository.searchBooks("zzyzx policzalna", 0, 20, USER_ID);
-        long count = bookRepository.countBySearch("zzyzx policzalna", USER_ID);
+        Collection<Book> found = bookRepository.searchBooks("zzyzx policzalna", null, BookSort.ADDED, 0, 20, USER_ID);
+        long count = bookRepository.countBySearch("zzyzx policzalna", null, USER_ID);
 
         assertThat(found).hasSize(2);
         assertThat(count).isEqualTo(2);
@@ -164,9 +166,82 @@ class BookRepositoryImplTest {
     void shouldNotFindBooksOfAnotherUser() {
         bookRepository.create(sampleBook("Zzyzx Cudza Wyszukiwana"));
 
-        Collection<Book> found = bookRepository.searchBooks("cudza wyszukiwana", 0, 20, 999L);
+        Collection<Book> found = bookRepository.searchBooks("cudza wyszukiwana", null, BookSort.ADDED, 0, 20, 999L);
 
         assertThat(found).isEmpty();
+    }
+
+    @Test
+    void shouldFilterSearchResultsByStatus() {
+        Book toRead = sampleBook("Zzyzx Statusowa Pierwsza");
+        Book finished = sampleBook("Zzyzx Statusowa Druga");
+        finished.setStatus(BookStatus.FINISHED);
+        bookRepository.create(toRead);
+        bookRepository.create(finished);
+
+        Collection<Book> found = bookRepository.searchBooks("zzyzx statusowa", BookStatus.FINISHED, BookSort.ADDED, 0, 20, USER_ID);
+        long count = bookRepository.countBySearch("zzyzx statusowa", BookStatus.FINISHED, USER_ID);
+
+        assertThat(found).extracting(Book::getTitle).containsExactly("Zzyzx Statusowa Druga");
+        assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    void shouldSortByRecentlyAddedFirst() {
+        bookRepository.create(sampleBook("Zzyzx Dodana Pierwsza"));
+        bookRepository.create(sampleBook("Zzyzx Dodana Druga"));
+
+        Collection<Book> found = bookRepository.searchBooks("zzyzx dodana", null, BookSort.ADDED, 0, 20, USER_ID);
+
+        assertThat(found).extracting(Book::getTitle)
+                .containsExactly("Zzyzx Dodana Druga", "Zzyzx Dodana Pierwsza");
+    }
+
+    @Test
+    void shouldSortByTitle() {
+        bookRepository.create(sampleBook("Zzyzx Tytulowa C"));
+        bookRepository.create(sampleBook("Zzyzx Tytulowa A"));
+        bookRepository.create(sampleBook("Zzyzx Tytulowa B"));
+
+        Collection<Book> found = bookRepository.searchBooks("zzyzx tytulowa", null, BookSort.TITLE, 0, 20, USER_ID);
+
+        assertThat(found).extracting(Book::getTitle)
+                .containsExactly("Zzyzx Tytulowa A", "Zzyzx Tytulowa B", "Zzyzx Tytulowa C");
+    }
+
+    @Test
+    void shouldSortByAuthor() {
+        Book second = sampleBook("Zzyzx Autorska Pierwsza");
+        second.setAuthor("Zbigniew Autor");
+        Book first = sampleBook("Zzyzx Autorska Druga");
+        first.setAuthor("Adam Autor");
+        bookRepository.create(second);
+        bookRepository.create(first);
+
+        Collection<Book> found = bookRepository.searchBooks("zzyzx autorska", null, BookSort.AUTHOR, 0, 20, USER_ID);
+
+        assertThat(found).extracting(Book::getAuthor).containsExactly("Adam Autor", "Zbigniew Autor");
+    }
+
+    @Test
+    void shouldSortByReadDateNewestFirstWithUnreadLast() {
+        Book unread = sampleBook("Zzyzx Datowa Nieprzeczytana");
+        Book older = sampleBook("Zzyzx Datowa Starsza");
+        older.setStatus(BookStatus.FINISHED);
+        older.setStartDate(LocalDate.of(2024, 1, 1));
+        older.setFinishDate(LocalDate.of(2024, 2, 1));
+        Book newer = sampleBook("Zzyzx Datowa Nowsza");
+        newer.setStatus(BookStatus.FINISHED);
+        newer.setStartDate(LocalDate.of(2025, 1, 1));
+        newer.setFinishDate(LocalDate.of(2025, 2, 1));
+        bookRepository.create(unread);
+        bookRepository.create(older);
+        bookRepository.create(newer);
+
+        Collection<Book> found = bookRepository.searchBooks("zzyzx datowa", null, BookSort.READ_DATE, 0, 20, USER_ID);
+
+        assertThat(found).extracting(Book::getTitle)
+                .containsExactly("Zzyzx Datowa Nowsza", "Zzyzx Datowa Starsza", "Zzyzx Datowa Nieprzeczytana");
     }
 
     private Book sampleBook(String title) {

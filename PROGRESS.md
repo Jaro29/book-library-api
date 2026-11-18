@@ -7,6 +7,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 **Deployment: KOMPLETNY - HTTPS, aplikacja żyje pod https://afterword.coffe.ink ✅**
 **Multi-user: KOMPLETNY - JWT, pełna izolacja danych per-user, wdrożone bezpiecznie na produkcji (68/68 książek zachowanych) ✅**
 **Wyszukiwanie zewnętrzne: KOMPLETNE - BN Data jako jedyne źródło, wyniki stronicowane po 20, wsadowe dodawanie z zaznaczaniem ✅**
+**Filtr statusu + sortowanie listy: KOMPLETNE na gałęzi `feature/add-book-status-filter-and-sort` (zakładki statusu i select „Sortuj” nad listą, zmiana filtra/sortowania wraca na stronę 0), niezmergowane ⏳**
 
 ---
 
@@ -55,9 +56,11 @@ Ten plik jest **punktem wejścia** do projektu, a `WSPOLPRACA.md` opisuje zasady
 - 404: `BookNotFoundException`, gdy id nie istnieje
 - Status: **zaimplementowane, zmergowane**
 
-### GET /books (lista + paginacja + wyszukiwanie)
+### GET /books (lista + paginacja + wyszukiwanie + filtr statusu + sortowanie)
 - Query params: `page` (default 0, `@Min(0)`), `pageSize` (default 20, `@Min(1)`, `@Max(100)`), `search` (opcjonalny, filtruje po title/author, case-insensitive, fragment w dowolnym miejscu; znaki `%`, `_`, `!` escapowane przez `ESCAPE '!'`)
-- 400: `ConstraintViolationException` przy niepoprawnych wartościach
+- `status` (opcjonalny: `TO_READ` | `READING` | `FINISHED`; brak = wszystkie), łączy się z `search` przez AND; `totalElements` liczone z tym samym filtrem
+- `sort` (default `ADDED`): `ADDED` = ostatnio dodane (`id DESC`), `TITLE`, `AUTHOR` (po imieniu, bo BN Data zapisuje „Imię Nazwisko"), `READ_DATE` = najnowiej przeczytane, bez daty na końcu. Whitelist w enumie `BookSort` (gotowy fragment `ORDER BY`, nigdy tekst od klienta), każde sortowanie z tie-breakerem `id` dla stabilnej paginacji
+- 400: `ConstraintViolationException` przy niepoprawnych wartościach; `MethodArgumentTypeMismatchException` przy nieznanym `status`/`sort` („Nieprawidłowa wartość parametru ...")
 - Response: `PageResponse<BookResponse>` (content, page, pageSize, totalElements, totalPages)
 - Status: **zaimplementowane, przetestowane (Mockito: totalPages, edge case 0 elementów), zmergowane**
 

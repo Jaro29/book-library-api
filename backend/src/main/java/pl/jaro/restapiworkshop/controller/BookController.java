@@ -13,6 +13,8 @@ import org.springframework.web.server.ResponseStatusException;
 import pl.jaro.restapiworkshop.dto.*;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.model.BookSort;
+import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.service.BnDataService;
 import pl.jaro.restapiworkshop.service.BookService;
 
@@ -47,11 +49,13 @@ public class BookController {
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int pageSize,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) BookStatus status,
+            @RequestParam(defaultValue = "ADDED") BookSort sort,
             @AuthenticationPrincipal Long userId) {
 
         PageResponse<Book> pageResponse = (search != null && !search.isBlank())
-                ? bookService.searchBooks(search, page, pageSize, userId)
-                : bookService.findAllBooks(page, pageSize, userId);
+                ? bookService.searchBooks(search, status, sort, page, pageSize, userId)
+                : bookService.findAllBooks(status, sort, page, pageSize, userId);
 
         List<BookResponse> content = pageResponse.content().stream()
                 .map(BookMapper::fromBook)

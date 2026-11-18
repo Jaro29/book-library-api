@@ -14,6 +14,7 @@ import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.exception.DuplicateBookException;
 import pl.jaro.restapiworkshop.exception.InvalidTimesReadException;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.model.BookSort;
 import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
 
@@ -160,10 +161,10 @@ class BookServiceImplTest {
         int page = 0;
         int pageSize = 10;
 
-        when(bookRepository.findAll(page, pageSize, USER_ID)).thenReturn(List.of());
-        when(bookRepository.countAll(USER_ID)).thenReturn(21L);
+        when(bookRepository.findAll(null, BookSort.ADDED, page, pageSize, USER_ID)).thenReturn(List.of());
+        when(bookRepository.countAll(null, USER_ID)).thenReturn(21L);
 
-        PageResponse<Book> result = bookService.findAllBooks(page, pageSize, USER_ID);
+        PageResponse<Book> result = bookService.findAllBooks(null, BookSort.ADDED, page, pageSize, USER_ID);
 
         assertEquals(3, result.totalPages());
         assertEquals(21, result.totalElements());
@@ -174,10 +175,10 @@ class BookServiceImplTest {
         int page = 0;
         int pageSize = 20;
 
-        when(bookRepository.findAll(page, pageSize, USER_ID)).thenReturn(List.of());
-        when(bookRepository.countAll(USER_ID)).thenReturn(0L);
+        when(bookRepository.findAll(null, BookSort.ADDED, page, pageSize, USER_ID)).thenReturn(List.of());
+        when(bookRepository.countAll(null, USER_ID)).thenReturn(0L);
 
-        PageResponse<Book> result = bookService.findAllBooks(page, pageSize, USER_ID);
+        PageResponse<Book> result = bookService.findAllBooks(null, BookSort.ADDED, page, pageSize, USER_ID);
 
         assertEquals(0, result.totalPages());
         assertEquals(0, result.totalElements());

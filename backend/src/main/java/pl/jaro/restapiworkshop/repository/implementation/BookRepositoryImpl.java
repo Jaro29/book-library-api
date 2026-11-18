@@ -14,6 +14,8 @@ import pl.jaro.restapiworkshop.exception.ApiException;
 import pl.jaro.restapiworkshop.exception.BookNotFoundException;
 import pl.jaro.restapiworkshop.exception.DuplicateBookException;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.model.BookSort;
+import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
 import pl.jaro.restapiworkshop.repository.BookSearchRepository;
 import pl.jaro.restapiworkshop.rowmapper.BookRowMapper;
@@ -70,15 +72,22 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public Collection<Book> findAll(int page, int pageSize, Long userId) {
-        return execute(() -> jdbc.query(SELECT_ALL_BOOKS_QUERY,
-                getPaginationParameters(page, pageSize).addValue("userId", userId), ROW_MAPPER));
+    public Collection<Book> findAll(BookStatus status, BookSort sort, int page, int pageSize, Long userId) {
+        return execute(() -> jdbc.query(SELECT_ALL_BOOKS_QUERY.formatted(sort.getOrderBy()),
+                getPaginationParameters(page, pageSize)
+                        .addValue("userId", userId)
+                        .addValue("status", statusName(status)),
+                ROW_MAPPER));
     }
 
     @Override
-    public long countAll(Long userId) {
+    public long countAll(BookStatus status, Long userId) {
         return execute(() -> {
-            Long count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY, of("userId", userId), Long.class);
+            Long count = jdbc.queryForObject(COUNT_ALL_BOOKS_QUERY,
+                    new MapSqlParameterSource()
+                            .addValue("userId", userId)
+                            .addValue("status", statusName(status)),
+                    Long.class);
             return count != null ? count : 0;
         });
     }
@@ -118,22 +127,31 @@ public class BookRepositoryImpl implements BookRepository, BookSearchRepository 
     }
 
     @Override
-    public Collection<Book> searchBooks(String search, int page, int pageSize, Long userId) {
+    public Collection<Book> searchBooks(String search, BookStatus status, BookSort sort, int page, int pageSize, Long userId) {
         return execute(() -> {
             SqlParameterSource params = getPaginationParameters(page, pageSize)
                     .addValue("search", toLikePattern(search))
-                    .addValue("userId", userId);
-            return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY, params, ROW_MAPPER);
+                    .addValue("userId", userId)
+                    .addValue("status", statusName(status));
+            return jdbc.query(SELECT_BOOKS_BY_SEARCH_QUERY.formatted(sort.getOrderBy()), params, ROW_MAPPER);
         });
     }
 
     @Override
-    public long countBySearch(String search, Long userId) {
+    public long countBySearch(String search, BookStatus status, Long userId) {
         return execute(() -> {
             Long count = jdbc.queryForObject(COUNT_BOOKS_BY_SEARCH_QUERY,
-                    of("search", toLikePattern(search), "userId", userId), Long.class);
+                    new MapSqlParameterSource()
+                            .addValue("search", toLikePattern(search))
+                            .addValue("userId", userId)
+                            .addValue("status", statusName(status)),
+                    Long.class);
             return count != null ? count : 0;
         });
+    }
+
+    private String statusName(BookStatus status) {
+        return status != null ? status.name() : null;
     }
 
     private String toLikePattern(String search) {

@@ -72,6 +72,20 @@ class BookControllerValidationTest {
     }
 
     @Test
+    void shouldReturn400WhenSortValueIsUnknown() throws Exception {
+        mockMvc.perform(get("/books").param("sort", "PRICE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Nieprawidłowa wartość parametru sort")));
+    }
+
+    @Test
+    void shouldReturn400WhenStatusValueIsUnknown() throws Exception {
+        mockMvc.perform(get("/books").param("status", "LOST"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string(containsString("Nieprawidłowa wartość parametru status")));
+    }
+
+    @Test
     void shouldReturn500WithGenericMessageOnUnexpectedException() throws Exception {
         when(bookService.findBookById(anyLong(), anyLong()))
                 .thenThrow(new RuntimeException("coś nieoczekiwanego, np. NPE w mapperze"));
