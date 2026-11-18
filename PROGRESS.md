@@ -7,7 +7,7 @@ Docker: backend + frontend (nginx reverse proxy) + docker-compose (z MariaDB) �
 **Deployment: KOMPLETNY - HTTPS, aplikacja żyje pod https://afterword.coffe.ink ✅**
 **Multi-user: KOMPLETNY - JWT, pełna izolacja danych per-user, wdrożone bezpiecznie na produkcji (68/68 książek zachowanych) ✅**
 **Wyszukiwanie zewnętrzne: KOMPLETNE - BN Data jako jedyne źródło, wyniki stronicowane po 20, wsadowe dodawanie z zaznaczaniem ✅**
-**Filtr statusu + sortowanie listy: KOMPLETNE na gałęzi `feature/add-book-status-filter-and-sort` (zakładki statusu i select „Sortuj” nad listą, zmiana filtra/sortowania wraca na stronę 0), niezmergowane ⏳**
+**Filtr statusu + sortowanie listy: KOMPLETNE - zakładki statusu i select „Sortuj” nad listą, zmiana filtra/sortowania wraca na stronę 0, zmergowane do `develop` (PR #76) ✅**
 
 ---
 
