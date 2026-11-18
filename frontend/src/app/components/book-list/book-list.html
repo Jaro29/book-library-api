@@ -27,6 +27,25 @@
     </div>
   </div>
 
+  <div class="list-controls">
+    <div class="status-tabs" role="group" aria-label="Filtr statusu">
+      @for (tab of statusTabs; track tab.label) {
+      <button class="btn btn-ghost status-tab" type="button"
+        [attr.aria-pressed]="statusFilter() === tab.value" (click)="setStatusFilter(tab.value)">
+        {{ tab.label }}
+      </button>
+      }
+    </div>
+    <label class="sort-select">
+      <span>Sortuj:</span>
+      <select [value]="sort()" (change)="setSort($any($event.target).value)">
+        @for (option of sortOptions; track option.value) {
+        <option [value]="option.value" [selected]="sort() === option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
+  </div>
+
   @if (bookService.loadError()) {
   <p class="load-error">{{ bookService.loadError() }}</p>
   }

@@ -9,10 +9,10 @@
   border-radius: 6px;
 }
 
-.view-toggle .icon-btn[aria-pressed='true'] {
-  background: var(--color-cover-alt);
-  color: var(--color-marigold);
-}
+.list-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 12px 0 16px; }
+.status-tabs { display: flex; flex-wrap: wrap; gap: 4px; }
+.view-toggle .icon-btn[aria-pressed='true'], .status-tab[aria-pressed='true'] { background: var(--color-cover-alt); color: var(--color-marigold); }
+.sort-select { display: flex; align-items: center; gap: 8px; color: var(--color-parchment-muted); }
 
 .book-rows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 

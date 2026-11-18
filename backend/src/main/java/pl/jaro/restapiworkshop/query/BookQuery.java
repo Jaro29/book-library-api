@@ -56,7 +56,8 @@ public final class BookQuery {
         SELECT * FROM books
         WHERE (LOWER(title) LIKE :search ESCAPE '!' OR LOWER(author) LIKE :search ESCAPE '!')
           AND user_id = :userId
-        ORDER BY id
+          AND (:status IS NULL OR status = :status)
+        ORDER BY %s
         LIMIT :pageSize OFFSET :offset
         """;
 
@@ -65,6 +66,7 @@ public final class BookQuery {
         FROM books
         WHERE (LOWER(title) LIKE :search ESCAPE '!' OR LOWER(author) LIKE :search ESCAPE '!')
           AND user_id = :userId
+          AND (:status IS NULL OR status = :status)
         """;
 
     public static final String UPDATE_BOOK_QUERY = """
@@ -87,7 +89,8 @@ public final class BookQuery {
             SELECT *
             FROM books
             WHERE user_id = :userId
-            ORDER BY id
+              AND (:status IS NULL OR status = :status)
+            ORDER BY %s
             LIMIT :pageSize OFFSET :offset
             """;
 
@@ -95,6 +98,7 @@ public final class BookQuery {
             SELECT COUNT(*)
             FROM books
             WHERE user_id = :userId
+              AND (:status IS NULL OR status = :status)
             """;
 
     public static final String DELETE_BOOK_QUERY =

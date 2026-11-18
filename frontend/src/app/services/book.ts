@@ -6,6 +6,8 @@ import { environment } from '../../environments/environment';
 import { BookSuggestion } from '../models/book-suggestion';
 
 export type BookView = 'list' | 'grid';
+export type BookStatusFilter = 'TO_READ' | 'READING' | 'FINISHED' | null;
+export type BookSort = 'ADDED' | 'TITLE' | 'AUTHOR' | 'READ_DATE';
 
 const VIEW_STORAGE_KEY = 'bookView';
 const PAGE_SIZES: Record<BookView, number> = { list: 20, grid: 48 };
@@ -36,6 +38,8 @@ export class BookService {
   searchQuery = signal('');
   loadError = signal<string | null>(null);
   viewMode = signal<BookView>(readStoredView());
+  statusFilter = signal<BookStatusFilter>(null);
+  sort = signal<BookSort>('ADDED');
 
   get pageSize() {
     return PAGE_SIZES[this.viewMode()];
@@ -95,13 +99,31 @@ export class BookService {
     this.loadBooks(0);
   }
 
+  setStatusFilter(status: BookStatusFilter) {
+    if (status === this.statusFilter()) {
+      return;
+    }
+    this.statusFilter.set(status);
+    this.loadBooks(0);
+  }
+
+  setSort(sort: BookSort) {
+    if (sort === this.sort()) {
+      return;
+    }
+    this.sort.set(sort);
+    this.loadBooks(0);
+  }
+
   private fetchPage(page: number) {
     const search = this.searchQuery();
+    const status = this.statusFilter();
     const searchParam = search ? `&search=${encodeURIComponent(search)}` : '';
+    const statusParam = status ? `&status=${status}` : '';
 
     return this.http
       .get<PageResponse<Book>>(
-        `${environment.apiUrl}/books?page=${page}&pageSize=${this.pageSize}${searchParam}`,
+        `${environment.apiUrl}/books?page=${page}&pageSize=${this.pageSize}${searchParam}${statusParam}&sort=${this.sort()}`,
       )
       .pipe(catchError(() => of(null)));
   }

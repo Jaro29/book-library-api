@@ -9,6 +9,8 @@ import pl.jaro.restapiworkshop.exception.DuplicateBookException;
 import pl.jaro.restapiworkshop.exception.InvalidTimesReadException;
 import pl.jaro.restapiworkshop.mapper.BookMapper;
 import pl.jaro.restapiworkshop.model.Book;
+import pl.jaro.restapiworkshop.model.BookSort;
+import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.model.BookStatus;
 import pl.jaro.restapiworkshop.repository.BookRepository;
 import pl.jaro.restapiworkshop.repository.BookSearchRepository;
@@ -43,9 +45,9 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public PageResponse<Book> findAllBooks(int page, int pageSize, Long userId) {
-        Collection<Book> books = bookRepository.findAll(page, pageSize, userId);
-        long totalElements = bookRepository.countAll(userId);
+    public PageResponse<Book> findAllBooks(BookStatus status, BookSort sort, int page, int pageSize, Long userId) {
+        Collection<Book> books = bookRepository.findAll(status, sort, page, pageSize, userId);
+        long totalElements = bookRepository.countAll(status, userId);
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
@@ -70,9 +72,9 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    public PageResponse<Book> searchBooks(String search, int page, int pageSize, Long userId) {
-        Collection<Book> books = bookSearchRepository.searchBooks(search, page, pageSize, userId);
-        long totalElements = bookSearchRepository.countBySearch(search, userId);
+    public PageResponse<Book> searchBooks(String search, BookStatus status, BookSort sort, int page, int pageSize, Long userId) {
+        Collection<Book> books = bookSearchRepository.searchBooks(search, status, sort, page, pageSize, userId);
+        long totalElements = bookSearchRepository.countBySearch(search, status, userId);
 
         int totalPages = (int) Math.ceil((double) totalElements / pageSize);
 
